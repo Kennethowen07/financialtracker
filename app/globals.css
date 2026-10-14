@@ -1,0 +1,58 @@
+/* Token desain dari docs/design/README.md. MVP selalu tema gelap. */
+:root {
+  color-scheme: dark;
+
+  --bg: #141414;
+  --card: #232323;
+  --panel: #1c1c1c;
+  --line: #2c2c2c;
+  --text: #f2f3f3;
+  --text-2: #a2a9a6;
+  --accent: #1f8f77;
+  --accent-light: #4fc9a8;
+  --bar-idle: #2f3d39;
+  --warn: #e0a33a;
+  --danger: #e5675c;
+
+  --grad-card: linear-gradient(135deg, #1a8a6f 0%, #0f5a4c 55%, #0a3a31 100%);
+  --grad-bar: linear-gradient(180deg, #5fe0b8 0%, #1f8f77 55%, #0f5a4c 100%);
+
+  --radius-card: 20px;
+  --radius-pill: 999px;
+  --touch: 44px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 2px;
+}

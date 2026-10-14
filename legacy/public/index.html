@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Financial Detector</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='6' fill='%231F8A5B'/><path d='M5 8h14v9H5zM5 11h14M8 14h3' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="shell">
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+      <div class="logo">
+        <span class="logo-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v12H3z"/><path d="M3 11h18"/><path d="M7 15h4"/></svg>
+        </span>
+        <span class="logo-text">Financial Detector</span>
+      </div>
+
+      <nav class="nav" aria-label="Menu utama">
+        <a class="nav-item" href="#/" data-view="dashboard">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h8V3H3zM13 21h8V8h-8zM3 21h8v-5H3z"/></svg>
+          <span class="nav-label">Dashboard</span>
+        </a>
+        <a class="nav-item" href="#/ai" data-view="ai" id="nav-ai">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5z"/></svg>
+          <span class="nav-label">AI Analyzer</span>
+          <span class="nav-badge" id="nav-ai-badge" hidden>OFF</span>
+        </a>
+      </nav>
+
+      <div class="month">
+        <div class="month-label">BULAN AKTIF</div>
+        <button class="month-btn" id="month-btn" type="button" aria-haspopup="true" aria-expanded="false">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="dim" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+          <span id="month-text">–</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="dimmer" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="month-pop" id="month-pop" hidden>
+          <div class="year-row">
+            <button class="year-nav" id="year-prev" type="button" aria-label="Tahun sebelumnya"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <span class="year" id="year-text">–</span>
+            <button class="year-nav" id="year-next" type="button" aria-label="Tahun berikutnya"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+          </div>
+          <div class="month-grid" id="month-grid"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <main class="main" id="main">
+      <header class="head">
+        <div>
+          <div class="kicker" id="kicker">–</div>
+          <div class="title-row">
+            <h1 id="title">Ringkasan Bulan Ini</h1>
+            <span class="soon" id="title-badge" hidden>BELUM AKTIF</span>
+          </div>
+        </div>
+        <button class="btn-primary" id="add-btn" type="button">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          <span>Tambah Pengeluaran</span>
+        </button>
+      </header>
+
+      <!-- DASHBOARD -->
+      <section id="view-dashboard">
+        <div id="dash" class="dash">
+          <div class="stats">
+            <article class="card stat">
+              <div class="stat-label">Total pengeluaran</div>
+              <div class="stat-value" id="s-total">–</div>
+              <div class="stat-foot" id="s-total-foot"></div>
+            </article>
+            <article class="card stat">
+              <div class="stat-label">Jumlah transaksi</div>
+              <div class="stat-value" id="s-count">–</div>
+              <div class="stat-foot" id="s-count-foot">transaksi bulan ini</div>
+            </article>
+            <article class="card stat">
+              <div class="stat-label">Rata-rata / hari</div>
+              <div class="stat-value" id="s-avg">–</div>
+              <div class="stat-foot" id="s-avg-foot"></div>
+            </article>
+          </div>
+
+          <div class="charts">
+            <article class="card chart-card">
+              <div class="card-row">
+                <h2 class="card-title">Pengeluaran per kategori</h2>
+                <span class="card-meta" id="cat-meta"></span>
+              </div>
+              <div id="categories" class="hbars"></div>
+            </article>
+            <article class="card chart-card">
+              <div class="card-row">
+                <h2 class="card-title">Pengeluaran harian</h2>
+                <span class="card-meta" id="daily-meta"></span>
+              </div>
+              <div id="daily" class="daily"></div>
+            </article>
+          </div>
+
+          <article class="card table-card">
+            <div class="table-head">
+              <h2>Daftar Transaksi</h2>
+              <div class="table-tools">
+                <select id="filter-category" aria-label="Filter kategori">
+                  <option value="">Semua kategori</option>
+                </select>
+                <span class="card-meta" id="tx-count"></span>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <div class="trow thead" role="row">
+                <span>TANGGAL</span><span>DESKRIPSI</span><span>KATEGORI</span><span class="right">JUMLAH</span><span></span>
+              </div>
+              <div id="tx-body" role="rowgroup"></div>
+            </div>
+          </article>
+        </div>
+
+        <div id="dash-empty" class="center-state" hidden>
+          <div class="illus">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M8 15h3"/></svg>
+          </div>
+          <h3>Belum ada pengeluaran</h3>
+          <p id="empty-text"></p>
+          <button class="btn-primary lg" id="empty-add" type="button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Tambah Pengeluaran</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- AI ANALYZER -->
+      <section id="view-ai" hidden>
+        <div id="ai-on" class="ai-wrap" hidden>
+          <article class="card ai-card">
+            <div class="card-row">
+              <div class="ai-heading">
+                <span class="ai-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5z"/></svg></span>
+                <h2 class="card-title" id="ai-title">Analisis bulan ini</h2>
+              </div>
+              <button class="btn-ghost" id="ai-refresh" type="button">Perbarui</button>
+            </div>
+            <div id="ai-body" class="ai-body"></div>
+            <div class="ai-meta" id="ai-meta"></div>
+          </article>
+          <div class="chips">
+            <span class="feature"><span class="dot"></span>Pola pengeluaran</span>
+            <span class="feature"><span class="dot"></span>Deteksi boros</span>
+            <span class="feature"><span class="dot"></span>Saran hemat</span>
+          </div>
+        </div>
+
+        <div id="ai-off" class="center-state" hidden>
+          <div class="illus lg">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5z"/></svg>
+          </div>
+          <h3>Analisis pintar, tinggal diaktifkan</h3>
+          <p class="wide">AI Analyzer membaca pola pengeluaranmu secara otomatis &mdash; menemukan kategori paling boros, mendeteksi lonjakan tak biasa, dan memberi saran hemat yang personal. Isi <code>ANTHROPIC_API_KEY</code> di file <code>.env</code>, lalu jalankan ulang aplikasi.</p>
+          <div class="chips">
+            <span class="feature"><span class="dot"></span>Pola pengeluaran</span>
+            <span class="feature"><span class="dot"></span>Deteksi boros</span>
+            <span class="feature"><span class="dot"></span>Saran hemat</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ================= FORM MODAL ================= -->
+  <div class="overlay" id="form-overlay" hidden>
+    <form class="modal" id="form" novalidate>
+      <div class="modal-head">
+        <h3 id="form-title">Tambah Pengeluaran</h3>
+        <button class="icon-btn" type="button" data-close aria-label="Tutup"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label for="f-amount">Nominal</label>
+          <div class="amount-box" id="amount-box">
+            <span class="prefix">Rp</span>
+            <input id="f-amount" inputmode="numeric" autocomplete="off" placeholder="0">
+          </div>
+          <div class="field-error" id="e-amount"></div>
+        </div>
+        <div class="field">
+          <label for="f-desc">Deskripsi</label>
+          <input id="f-desc" class="input" maxlength="100" autocomplete="off" placeholder="mis. Makan siang">
+          <div class="field-error" id="e-desc"></div>
+        </div>
+        <div class="field">
+          <span class="label">Kategori</span>
+          <div class="cat-chips" id="f-cats" role="radiogroup" aria-label="Kategori"></div>
+        </div>
+        <div class="field">
+          <label for="f-date">Tanggal</label>
+          <input id="f-date" class="input" type="date">
+          <div class="hint">Default hari ini, bisa diubah.</div>
+        </div>
+        <div class="field-error" id="e-form"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-outline" type="button" data-close>Batal</button>
+        <button class="btn-save" type="submit" id="f-save" disabled>Simpan</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ================= KONFIRMASI HAPUS ================= -->
+  <div class="overlay" id="confirm-overlay" hidden>
+    <div class="modal small" role="alertdialog" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+      <div class="modal-body">
+        <h3 id="confirm-title">Hapus transaksi ini?</h3>
+        <p id="confirm-text"></p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-outline" type="button" data-close>Batal</button>
+        <button class="btn-danger" type="button" id="confirm-ok">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
