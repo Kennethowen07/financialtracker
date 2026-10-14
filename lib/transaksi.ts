@@ -136,7 +136,7 @@ async function sisipkan(
 // ---------- mencatat dari teks ----------
 
 /** Validasi tebakan AI terhadap daftar kategori. Kategori di luar daftar = ragu (PRD). */
-function nilaiTebakan(
+export function nilaiTebakan(
   tebakan: TebakanKategori,
   kategori: { id: number; nama: string; jenis: string }[],
   jenisPasti: Jenis | null,

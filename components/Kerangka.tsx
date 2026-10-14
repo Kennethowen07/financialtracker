@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Ikon } from "./Ikon";
+import { TombolKeluar } from "./TombolKeluar";
 
 interface Props {
   aktif: "dasbor" | "analisis";
@@ -30,6 +31,7 @@ export function Kerangka({ aktif, demo = false, children }: Props) {
             Analisis AI
           </Link>
         )}
+        {!demo && <TombolKeluar />}
       </nav>
       <div className="isi">{children}</div>
     </div>

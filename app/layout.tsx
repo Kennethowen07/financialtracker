@@ -11,6 +11,8 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Financial Detector",
   description: "Catat pengeluaran dengan mengetik bebas, langsung jadi dashboard bulanan.",
+  // Mode layar penuh saat dipasang di layar utama iPhone.
+  appleWebApp: { capable: true, title: "Keuangan", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {

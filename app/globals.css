@@ -1037,6 +1037,83 @@ a {
   gap: 10px;
 }
 
+/* ================= mode demo (desain 06) ================= */
+
+.pil-demo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--pill);
+  background: var(--card);
+  border: 1px solid #2f4a42;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-light);
+  white-space: nowrap;
+}
+
+.pil-titik {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--pill);
+  background: var(--accent-light);
+}
+
+.pil-demo.habis {
+  border-color: #4a3f22;
+  color: #e0b85a;
+}
+
+.pil-demo.habis .pil-titik {
+  background: var(--warn);
+}
+
+/* ================= halaman masuk ================= */
+
+.halaman-masuk {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.kartu-masuk {
+  width: 100%;
+  max-width: 360px;
+  padding: 28px 24px;
+  gap: 14px;
+  align-items: stretch;
+  text-align: center;
+}
+
+.sidebar-logo-ikon.besar {
+  align-self: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(135deg, #1a8a6f 0%, #0f5a4c 100%);
+}
+
+.tautan-demo {
+  font-size: 13px;
+  color: var(--accent-light);
+  text-decoration: none;
+}
+
+.sidebar-keluar {
+  margin-top: auto;
+  border: 0;
+  background: none;
+  text-align: left;
+  width: 100%;
+}
+
 /* ================= Analisis AI (desain 05b) ================= */
 
 .analisis-atas {
