@@ -10,7 +10,9 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:setup": "tsx scripts/db-setup.ts"
+    "db:setup": "tsx scripts/db-setup.ts",
+    "import:siapkan": "tsx scripts/import-1-siapkan.ts",
+    "import:jalankan": "tsx scripts/import-2-jalankan.ts"
   },
   "dependencies": {
     "@google/genai": "^2.29.1",
@@ -25,6 +27,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.1",
+    "exceljs": "^4.4.0",
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.4"
