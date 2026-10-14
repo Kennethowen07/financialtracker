@@ -1037,6 +1037,98 @@ a {
   gap: 10px;
 }
 
+/* ================= Analisis AI (desain 05b) ================= */
+
+.analisis-atas {
+  justify-content: space-between;
+}
+
+.tombol-utama.dengan-ikon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  font-size: 14px;
+}
+
+.berputar {
+  animation: putar 1s linear infinite;
+}
+
+.analisis-grid {
+  display: grid;
+  gap: 14px;
+  align-items: start;
+}
+
+.kartu-analisis {
+  background: linear-gradient(160deg, #1b2b26 0%, #232323 60%);
+  border: 1px solid #2c3d37;
+  border-radius: 22px;
+  padding: 22px;
+}
+
+.analisis-judul {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.analisis-judul svg {
+  color: var(--accent-light);
+}
+
+.analisis-teks {
+  font-size: 16px;
+  line-height: 1.65;
+  color: #e3e7e5;
+}
+
+.analisis-teks.redup {
+  color: var(--text-2);
+  font-size: 14.5px;
+}
+
+.analisis-waktu {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.sering-baris {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.sering-kali {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: var(--pill);
+  background: #1d2f2a;
+  color: var(--accent-light);
+}
+
+.sering-total {
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 92px;
+  text-align: right;
+}
+
+code {
+  font-size: 0.9em;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #2a2a2a;
+}
+
 /* ================= laptop (desain 05) ================= */
 
 @media (min-width: 900px) {
@@ -1303,5 +1395,21 @@ a {
 
   .pesan {
     bottom: 24px;
+  }
+
+  .kembali {
+    display: none;
+  }
+
+  .atas.analisis-atas {
+    justify-content: space-between;
+  }
+
+  .analisis-grid {
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  }
+
+  .kartu-analisis {
+    padding: 24px;
   }
 }
