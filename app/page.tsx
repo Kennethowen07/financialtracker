@@ -1,40 +1,35 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { db, lokasiDatabase } from "@/lib/db";
+import { Dasbor } from "@/components/Dasbor";
+import { db } from "@/lib/db";
+import { daftarKategori } from "@/lib/kategori";
+import { bulanSebelumnya, hariIni } from "@/lib/tanggal";
+import { daftarTransaksi } from "@/lib/transaksi";
 
-// Halaman sementara Tahap 1: memastikan Next.js dan database tersambung.
-// Diganti layar utama di Tahap 4.
-
-async function StatusDatabase() {
-  // Data harus dibaca saat ada request, bukan saat build.
-  await connection();
-  const jumlah = await hitungKategori();
-  if (jumlah === null) {
-    return <p>Database belum siap. Jalankan <code>npm run db:setup</code> dulu.</p>;
-  }
+// Server Component: mengambil data awal langsung dari database, lalu menyerahkannya
+// ke <Dasbor> (Client Component) supaya layar langsung terisi tanpa loading kedua.
+async function HalamanDasbor() {
+  await connection(); // data dibaca saat ada request, bukan saat build
+  const tanggal = hariIni();
+  const bulan = tanggal.slice(0, 7);
+  const [kategori, transaksi, transaksiLalu] = await Promise.all([
+    daftarKategori(db),
+    daftarTransaksi(db, bulan),
+    daftarTransaksi(db, bulanSebelumnya(bulan)),
+  ]);
   return (
-    <p>
-      Database tersambung ({lokasiDatabase}). <span className="num">{jumlah}</span> kategori terisi.
-    </p>
+    <Dasbor
+      hariIni={tanggal}
+      aiAktif={Boolean(process.env.GEMINI_API_KEY)}
+      awal={{ kategori, transaksi, transaksiLalu }}
+    />
   );
-}
-
-async function hitungKategori(): Promise<number | null> {
-  try {
-    const { rows } = await db.execute("SELECT COUNT(*) AS jumlah FROM kategori");
-    return Number(rows[0].jumlah);
-  } catch {
-    return null; // tabel belum dibuat
-  }
 }
 
 export default function Home() {
   return (
-    <main style={{ padding: 24, display: "grid", gap: 12 }}>
-      <h1 style={{ fontSize: 22 }}>Financial Detector</h1>
-      <Suspense fallback={<p>Mengecek database…</p>}>
-        <StatusDatabase />
-      </Suspense>
-    </main>
+    <Suspense fallback={<div className="memuat-halaman" aria-busy="true" />}>
+      <HalamanDasbor />
+    </Suspense>
   );
 }
