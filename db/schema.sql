@@ -21,15 +21,21 @@ CREATE TABLE IF NOT EXISTS transaksi (
   tanggal     TEXT    NOT NULL CHECK (tanggal GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),
   nominal     INTEGER NOT NULL CHECK (nominal > 0),
   jenis       TEXT    NOT NULL CHECK (jenis IN ('pengeluaran', 'pemasukan', 'investasi', 'usaha')),
+  -- Arah uang. Pengeluaran & usaha selalu keluar, pemasukan selalu masuk.
+  -- Investasi bisa keduanya: setoran (keluar) atau penarikan (masuk).
+  arah        TEXT    NOT NULL DEFAULT 'keluar' CHECK (arah IN ('keluar', 'masuk')),
   -- NULL artinya kategori belum ditentukan (menunggu tanya balik), atau jenisnya usaha.
   kategori_id INTEGER REFERENCES kategori (id),
   deskripsi   TEXT    NOT NULL,
   teks_asli   TEXT    NOT NULL,
   -- Dari mana kategorinya berasal.
   sumber      TEXT    NOT NULL CHECK (sumber IN ('memori', 'ai', 'tanya_balik', 'manual', 'import')),
+  -- 1 kalau jenis/kategorinya pernah diganti lewat edit (metrik akurasi di PRD).
+  dikoreksi   INTEGER NOT NULL DEFAULT 0 CHECK (dikoreksi IN (0, 1)),
   dibuat_pada TEXT    NOT NULL,
   -- Usaha tidak boleh punya kategori.
-  CHECK (jenis <> 'usaha' OR kategori_id IS NULL)
+  CHECK (jenis <> 'usaha' OR kategori_id IS NULL),
+  CHECK (jenis = 'investasi' OR arah = CASE jenis WHEN 'pemasukan' THEN 'masuk' ELSE 'keluar' END)
 );
 CREATE INDEX IF NOT EXISTS idx_transaksi_tanggal ON transaksi (tanggal);
 
