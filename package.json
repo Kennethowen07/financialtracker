@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:setup": "tsx scripts/db-setup.ts",
+    "db:backup": "tsx scripts/backup.ts",
     "import:siapkan": "tsx scripts/import-1-siapkan.ts",
     "import:jalankan": "tsx scripts/import-2-jalankan.ts"
   },
