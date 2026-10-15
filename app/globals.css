@@ -1276,9 +1276,9 @@ code {
   .isi {
     flex: 1;
     min-width: 0;
-    max-width: 1240px;
+    max-width: none; /* isi selebar layar, tidak menyisakan ruang kosong di kanan */
     margin: 0;
-    padding: 28px 24px 40px;
+    padding: 28px 32px 40px;
     gap: 20px;
   }
 
