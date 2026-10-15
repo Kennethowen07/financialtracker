@@ -92,6 +92,7 @@ export function FormMasuk({ google, dev, galat: galatAwal }: Props) {
         )}
 
         <Link href="/demo" className="tautan-demo">Coba mode demo tanpa akun</Link>
+        <Link href="/privasi" className="tautan-privasi">Kebijakan privasi</Link>
       </div>
     </main>
   );

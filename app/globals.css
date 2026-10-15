@@ -1719,3 +1719,56 @@ code {
     padding: 24px;
   }
 }
+
+/* ---------- halaman teks (kebijakan privasi) ---------- */
+.halaman-teks {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 16px 48px;
+  line-height: 1.65;
+  font-size: 15px;
+  color: var(--text-3);
+}
+
+.halaman-teks h1 {
+  font-size: 24px;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+
+.halaman-teks h2 {
+  font-size: 17px;
+  color: var(--text);
+  margin: 28px 0 8px;
+}
+
+.halaman-teks ul {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.halaman-teks b {
+  color: var(--text);
+}
+
+.halaman-teks a,
+.tautan-privasi {
+  color: var(--accent-light);
+}
+
+.halaman-teks-sub {
+  font-size: 13px;
+  color: var(--text-2);
+  margin: 0 0 20px;
+}
+
+.halaman-teks-kaki {
+  margin-top: 32px;
+}
+
+.tautan-privasi {
+  font-size: 12px;
+  text-decoration: none;
+}

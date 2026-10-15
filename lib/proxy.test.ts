@@ -15,7 +15,7 @@ const lewat = (res: Response) => res.headers.get("x-middleware-next") === "1";
 
 describe("proxy", () => {
   test("halaman publik terbuka tanpa login", async () => {
-    for (const path of ["/masuk", "/demo", "/api/auth/google", "/api/auth/google/callback", "/api/demo/catat", "/ikon/192", "/icon", "/manifest.webmanifest"]) {
+    for (const path of ["/masuk", "/demo", "/privasi", "/api/auth/google", "/api/auth/google/callback", "/api/demo/catat", "/ikon/192", "/icon", "/manifest.webmanifest"]) {
       expect(lewat(await proxy(req(path))), path).toBe(true);
     }
   });
