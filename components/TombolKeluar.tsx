@@ -2,8 +2,8 @@
 import { useRouter } from "next/navigation";
 import { Ikon } from "./Ikon";
 
-/** Tombol keluar di sidebar (laptop). Menghapus cookie sesi lalu pindah ke halaman masuk. */
-export function TombolKeluar() {
+/** Tombol keluar (sidebar laptop & halaman akun). Menghapus cookie sesi lalu pindah ke halaman masuk. */
+export function TombolKeluar({ className = "sidebar-link sidebar-keluar" }: { className?: string }) {
   const router = useRouter();
   async function keluar() {
     await fetch("/api/keluar", { method: "POST" }).catch(() => undefined);
@@ -11,7 +11,7 @@ export function TombolKeluar() {
     router.refresh();
   }
   return (
-    <button type="button" className="sidebar-link sidebar-keluar" onClick={keluar}>
+    <button type="button" className={className} onClick={keluar}>
       <Ikon nama="keluar" />
       Keluar
     </button>

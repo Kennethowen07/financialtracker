@@ -13,8 +13,11 @@ export interface Analisis {
   dibuatPada: string;
 }
 
-export async function ambilAnalisis(db: Client, bulan: string): Promise<Analisis | null> {
-  const { rows } = await db.execute({ sql: "SELECT bulan, isi, dibuat_pada FROM analisis WHERE bulan = ?", args: [bulan] });
+export async function ambilAnalisis(db: Client, penggunaId: number, bulan: string): Promise<Analisis | null> {
+  const { rows } = await db.execute({
+    sql: "SELECT bulan, isi, dibuat_pada FROM analisis WHERE pengguna_id = ? AND bulan = ?",
+    args: [penggunaId, bulan],
+  });
   if (!rows[0]) return null;
   return { bulan: String(rows[0].bulan), isi: String(rows[0].isi), dibuatPada: String(rows[0].dibuat_pada) };
 }
@@ -43,8 +46,8 @@ export type HasilAnalisis = { ok: true; analisis: Analisis } | { ok: false; alas
 export async function perbaruiAnalisis(deps: Deps, bulan: string): Promise<HasilAnalisis> {
   const sekarang = deps.sekarang?.() ?? new Date();
   const [ini, lalu] = await Promise.all([
-    daftarTransaksi(deps.db, bulan),
-    daftarTransaksi(deps.db, bulanSebelumnya(bulan)),
+    daftarTransaksi(deps.db, deps.penggunaId, bulan),
+    daftarTransaksi(deps.db, deps.penggunaId, bulanSebelumnya(bulan)),
   ]);
   if (ini.length === 0) return { ok: false, alasan: "tanpa_data" };
 
@@ -54,9 +57,9 @@ export async function perbaruiAnalisis(deps: Deps, bulan: string): Promise<Hasil
 
   const analisis: Analisis = { bulan, isi: hasil.data.trim(), dibuatPada: sekarang.toISOString() };
   await deps.db.execute({
-    sql: `INSERT INTO analisis (bulan, isi, dibuat_pada) VALUES (?, ?, ?)
-          ON CONFLICT (bulan) DO UPDATE SET isi = excluded.isi, dibuat_pada = excluded.dibuat_pada`,
-    args: [analisis.bulan, analisis.isi, analisis.dibuatPada],
+    sql: `INSERT INTO analisis (pengguna_id, bulan, isi, dibuat_pada) VALUES (?, ?, ?, ?)
+          ON CONFLICT (pengguna_id, bulan) DO UPDATE SET isi = excluded.isi, dibuat_pada = excluded.dibuat_pada`,
+    args: [deps.penggunaId, analisis.bulan, analisis.isi, analisis.dibuatPada],
   });
   return { ok: true, analisis };
 }

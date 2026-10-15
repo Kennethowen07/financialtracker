@@ -46,6 +46,7 @@ export const IKON: Record<string, string[]> = {
   segarkan: ["M20 11a8 8 0 1 0-2.3 5.7", "M20 5v6h-6"],
   memproses: ["M21 12a9 9 0 1 1-6.2-8.6"],
   tren: ["M3 17l6-6 4 4 8-8"],
+  pengguna: ["M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6"],
 };
 
 export function pathIkon(kunci: string | null | undefined): string[] {

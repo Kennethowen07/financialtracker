@@ -1,27 +1,20 @@
 // Proxy (dulu "middleware"): jalan sebelum setiap request.
-// Melindungi data pribadi. Yang terbuka tanpa login: /masuk, /demo, API demo, ikon & manifest PWA.
+// Melindungi data pribadi. Yang terbuka tanpa login: /masuk, /demo, login Google, API demo,
+// ikon & manifest PWA. Di sini hanya dicek tanda tangan cookie (cepat, tanpa database);
+// akun yang dinonaktifkan dicek lagi di server (lib/server.ts).
 import { NextResponse, type NextRequest } from "next/server";
-import { loginAktif, NAMA_COOKIE, tokenSah } from "@/lib/sesi";
+import { bacaToken, NAMA_COOKIE } from "@/lib/sesi";
 
 export async function proxy(request: NextRequest) {
-  const api = request.nextUrl.pathname.startsWith("/api/");
+  if ((await bacaToken(request.cookies.get(NAMA_COOKIE)?.value)) !== null) return NextResponse.next();
 
-  if (!loginAktif()) {
-    // Development tanpa APP_PASSWORD: bebas, supaya mudah dicoba.
-    if (process.env.NODE_ENV !== "production") return NextResponse.next();
-    // Production tanpa password: data pribadi ditutup total, arahkan ke demo.
-    return api
-      ? NextResponse.json({ error: "Login belum diatur (APP_PASSWORD kosong)" }, { status: 401 })
-      : NextResponse.redirect(new URL("/demo", request.url));
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.json({ error: "Belum masuk" }, { status: 401 });
   }
-
-  if (await tokenSah(request.cookies.get(NAMA_COOKIE)?.value)) return NextResponse.next();
-
-  if (api) return NextResponse.json({ error: "Belum masuk" }, { status: 401 });
   return NextResponse.redirect(new URL("/masuk", request.url));
 }
 
 export const config = {
   // Semua path kecuali yang publik. "/" (dashboard) ikut dilindungi.
-  matcher: ["/((?!masuk|demo|api/masuk|api/demo|_next/|ikon/|icon|apple-icon|manifest.webmanifest|favicon.ico).*)"],
+  matcher: ["/((?!masuk|demo|api/auth|api/demo|_next/|ikon/|icon|apple-icon|manifest.webmanifest|favicon.ico).*)"],
 };

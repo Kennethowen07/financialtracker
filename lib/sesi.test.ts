@@ -1,34 +1,35 @@
 import { describe, expect, test } from "vitest";
-import { buatToken, passwordCocok, tokenSah, UMUR_SESI_DETIK } from "./sesi";
+import { bacaToken, buatToken, UMUR_SESI_DETIK } from "./sesi";
 
 const RAHASIA = "rahasia-uji";
 
 describe("sesi login", () => {
-  test("token baru sah", async () => {
-    const token = await buatToken(Date.now(), RAHASIA);
-    expect(await tokenSah(token, Date.now(), RAHASIA)).toBe(true);
+  test("token baru sah dan berisi id pengguna", async () => {
+    const token = await buatToken(7, Date.now(), RAHASIA);
+    expect(await bacaToken(token, Date.now(), RAHASIA)).toBe(7);
   });
 
   test("token kedaluwarsa setelah 30 hari", async () => {
     const dibuat = Date.UTC(2026, 9, 1);
-    const token = await buatToken(dibuat, RAHASIA);
-    expect(await tokenSah(token, dibuat + (UMUR_SESI_DETIK - 60) * 1000, RAHASIA)).toBe(true);
-    expect(await tokenSah(token, dibuat + (UMUR_SESI_DETIK + 60) * 1000, RAHASIA)).toBe(false);
+    const token = await buatToken(7, dibuat, RAHASIA);
+    expect(await bacaToken(token, dibuat + (UMUR_SESI_DETIK - 60) * 1000, RAHASIA)).toBe(7);
+    expect(await bacaToken(token, dibuat + (UMUR_SESI_DETIK + 60) * 1000, RAHASIA)).toBeNull();
   });
 
-  test("token yang diubah atau ditandatangani kunci lain ditolak", async () => {
-    const token = await buatToken(Date.now(), RAHASIA);
-    const [exp, tanda] = token.split(".");
-    expect(await tokenSah(`${Number(exp) + 999999}.${tanda}`, Date.now(), RAHASIA)).toBe(false);
-    expect(await tokenSah(token, Date.now(), "kunci-lain")).toBe(false);
-    expect(await tokenSah("asal-asalan", Date.now(), RAHASIA)).toBe(false);
-    expect(await tokenSah(undefined, Date.now(), RAHASIA)).toBe(false);
+  test("id, waktu, atau tanda tangan yang diubah ditolak", async () => {
+    const token = await buatToken(7, Date.now(), RAHASIA);
+    const [, exp, tanda] = token.split(".");
+    // Mengganti id ke akun lain (mis. admin) dengan tanda tangan lama → ditolak.
+    expect(await bacaToken(`1.${exp}.${tanda}`, Date.now(), RAHASIA)).toBeNull();
+    expect(await bacaToken(`7.${Number(exp) + 999999}.${tanda}`, Date.now(), RAHASIA)).toBeNull();
+    expect(await bacaToken(token, Date.now(), "kunci-lain")).toBeNull();
+    expect(await bacaToken("asal-asalan", Date.now(), RAHASIA)).toBeNull();
+    expect(await bacaToken(undefined, Date.now(), RAHASIA)).toBeNull();
   });
 
-  test("password", async () => {
-    expect(await passwordCocok("benar123", "benar123")).toBe(true);
-    expect(await passwordCocok("salah", "benar123")).toBe(false);
-    expect(await passwordCocok("", "benar123")).toBe(false);
-    expect(await passwordCocok("apa saja", "")).toBe(false);
+  test("tanpa kunci (SESSION_SECRET kosong di production) tidak ada token yang sah", async () => {
+    const token = await buatToken(7, Date.now(), RAHASIA);
+    expect(await bacaToken(token, Date.now(), "")).toBeNull();
+    await expect(buatToken(7, Date.now(), "")).rejects.toThrow("SESSION_SECRET");
   });
 });

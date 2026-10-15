@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import type { InfoAkun } from "@/lib/akun";
 import { denganSesi, gudangServer, type Gudang } from "@/lib/gudang";
 import type { Kategori } from "@/lib/kategori";
 import { ringkas } from "@/lib/laporan";
@@ -33,6 +34,8 @@ interface Props {
   contoh?: string[];
   /** Dipanggil setelah teks dicatat (mode demo memakai ini untuk memperbarui kuota). */
   setelahCatat?: () => void;
+  /** Akun yang login (kosong di mode demo). */
+  akun?: InfoAkun;
 }
 
 const PESAN_GAGAL: Record<AlasanGagalBaca, string> = {
@@ -49,7 +52,7 @@ interface Pesan {
   aksi?: { label: string; jalankan: () => void };
 }
 
-export function Dasbor({ hariIni, aiAktif, awal, gudang: gudangAsli = gudangServer, kepala, contoh, setelahCatat }: Props) {
+export function Dasbor({ hariIni, aiAktif, awal, gudang: gudangAsli = gudangServer, kepala, contoh, setelahCatat, akun }: Props) {
   const router = useRouter();
   const gudang = useMemo(() => denganSesi(gudangAsli, () => router.push("/masuk")), [gudangAsli, router]);
   const bulanIni = hariIni.slice(0, 7);
@@ -196,16 +199,22 @@ export function Dasbor({ hariIni, aiAktif, awal, gudang: gudangAsli = gudangServ
   const demo = gudang.mode === "demo";
 
   return (
-    <Kerangka aktif="dasbor" demo={demo}>
+    <Kerangka aktif="dasbor" akun={demo ? undefined : akun}>
       <header className="atas">
         <div className="atas-kiri">
           <PemilihBulan bulan={bulan} bulanIni={bulanIni} onPilih={gantiBulan} />
           {kepala}
         </div>
         {!demo && (
-          <Link href="/analisis" className="tombol-bintang" aria-label="Analisis AI">
-            <Ikon nama="bintang" ukuran={20} />
-          </Link>
+          <div className="atas-tombol">
+            <Link href="/analisis" className="tombol-bintang" aria-label="Analisis AI">
+              <Ikon nama="bintang" ukuran={20} />
+            </Link>
+            {/* Di HP sidebar disembunyikan, jadi akun & tombol keluar dibuka dari sini. */}
+            <Link href="/akun" className="tombol-bintang tombol-akun" aria-label="Akun">
+              <Ikon nama="pengguna" ukuran={20} />
+            </Link>
+          </div>
         )}
 
         <form className="kotak-input" onSubmit={kirim}>

@@ -136,3 +136,16 @@ export const AI_NONAKTIF: LayananAI = {
   tebakKategori: async () => ({ ok: false, alasan: "tidak_aktif" }),
   buatAnalisis: async () => ({ ok: false, alasan: "tidak_aktif" }),
 };
+
+/**
+ * Bungkus layanan AI dengan kuota: setiap panggilan memakai satu jatah lewat `pakai()`.
+ * Kalau jatah habis, hasilnya "kuota" tanpa memanggil AI (lalu muncul tanya balik seperti biasa).
+ */
+export function denganKuota(ai: LayananAI, pakai: () => Promise<boolean>): LayananAI {
+  if (!ai.aktif) return ai;
+  return {
+    aktif: true,
+    tebakKategori: async (input) => ((await pakai()) ? ai.tebakKategori(input) : { ok: false, alasan: "kuota" }),
+    buatAnalisis: async (ringkasan) => ((await pakai()) ? ai.buatAnalisis(ringkasan) : { ok: false, alasan: "kuota" }),
+  };
+}

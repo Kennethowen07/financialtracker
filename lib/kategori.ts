@@ -10,8 +10,13 @@ export interface Kategori {
   buatanPengguna: boolean;
 }
 
-export async function daftarKategori(client: Client): Promise<Kategori[]> {
-  const { rows } = await client.execute("SELECT id, nama, jenis, ikon, buatan_pengguna FROM kategori ORDER BY id");
+/** Kategori bawaan (milik semua akun) + kategori "ketik sendiri" milik akun ini. */
+export async function daftarKategori(client: Client, penggunaId: number): Promise<Kategori[]> {
+  const { rows } = await client.execute({
+    sql: `SELECT id, nama, jenis, ikon, buatan_pengguna FROM kategori
+          WHERE pengguna_id IS NULL OR pengguna_id = ? ORDER BY id`,
+    args: [penggunaId],
+  });
   return rows.map((r) => ({
     id: Number(r.id),
     nama: String(r.nama),
@@ -26,11 +31,12 @@ export class KesalahanInput extends Error {}
 /**
  * Menentukan id kategori untuk sebuah jenis transaksi.
  * - Usaha → selalu null (tidak punya kategori).
- * - kategoriBaru → dibuat dulu (opsi "ketik sendiri"), atau dipakai kalau namanya sudah ada.
- * - kategoriId → harus ada dan jenisnya cocok.
+ * - kategoriBaru → dipakai kalau namanya sudah ada (bawaan atau milik sendiri), kalau belum dibuat.
+ * - kategoriId → harus ada, boleh dipakai akun ini, dan jenisnya cocok.
  */
 export async function tentukanKategori(
   client: Client,
+  penggunaId: number,
   jenis: Jenis,
   pilihan: { kategoriId?: number | null; kategoriBaru?: string | null },
 ): Promise<number | null> {
@@ -39,21 +45,24 @@ export async function tentukanKategori(
   const baru = pilihan.kategoriBaru?.trim().replace(/\s+/g, " ");
   if (baru) {
     if (baru.length > 40) throw new KesalahanInput("Nama kategori maksimal 40 karakter");
-    await client.execute({
-      sql: "INSERT OR IGNORE INTO kategori (nama, jenis, ikon, buatan_pengguna) VALUES (?, ?, 'lainnya', 1)",
-      args: [baru, jenis],
-    });
     const { rows } = await client.execute({
-      sql: "SELECT id FROM kategori WHERE nama = ? AND jenis = ?",
-      args: [baru, jenis],
+      sql: `SELECT id FROM kategori
+            WHERE lower(nama) = lower(?) AND jenis = ? AND (pengguna_id IS NULL OR pengguna_id = ?)
+            ORDER BY pengguna_id IS NOT NULL LIMIT 1`,
+      args: [baru, jenis, penggunaId],
     });
-    return Number(rows[0].id);
+    if (rows[0]) return Number(rows[0].id);
+    const res = await client.execute({
+      sql: "INSERT INTO kategori (nama, jenis, ikon, buatan_pengguna, pengguna_id) VALUES (?, ?, 'lainnya', 1, ?)",
+      args: [baru, jenis, penggunaId],
+    });
+    return Number(res.lastInsertRowid);
   }
 
   if (pilihan.kategoriId == null) throw new KesalahanInput("Kategori wajib dipilih");
   const { rows } = await client.execute({
-    sql: "SELECT jenis FROM kategori WHERE id = ?",
-    args: [pilihan.kategoriId],
+    sql: "SELECT jenis FROM kategori WHERE id = ? AND (pengguna_id IS NULL OR pengguna_id = ?)",
+    args: [pilihan.kategoriId, penggunaId],
   });
   if (!rows[0]) throw new KesalahanInput("Kategori tidak ditemukan");
   if (rows[0].jenis !== jenis) throw new KesalahanInput("Kategori tidak cocok dengan jenis transaksi");

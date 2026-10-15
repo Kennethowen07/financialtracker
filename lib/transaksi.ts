@@ -32,6 +32,8 @@ export interface Transaksi {
 export interface Deps {
   db: Client;
   ai: LayananAI;
+  /** Akun yang sedang memakai aplikasi. Semua data dibaca/ditulis atas nama akun ini saja. */
+  penggunaId: number;
   sekarang?: () => Date;
 }
 
@@ -105,32 +107,37 @@ function keTransaksi(r: Record<string, unknown>): Transaksi {
   };
 }
 
-export async function ambilTransaksi(db: Client, id: number): Promise<Transaksi | null> {
-  const { rows } = await db.execute({ sql: `${SELECT_TRANSAKSI} WHERE t.id = ?`, args: [id] });
+/** Satu transaksi milik akun ini. Transaksi akun lain dianggap tidak ada. */
+export async function ambilTransaksi(db: Client, penggunaId: number, id: number): Promise<Transaksi | null> {
+  const { rows } = await db.execute({
+    sql: `${SELECT_TRANSAKSI} WHERE t.id = ? AND t.pengguna_id = ?`,
+    args: [id, penggunaId],
+  });
   return rows[0] ? keTransaksi(rows[0] as Record<string, unknown>) : null;
 }
 
-/** Semua transaksi satu bulan (YYYY-MM), terbaru dulu. */
-export async function daftarTransaksi(db: Client, bulan: string): Promise<Transaksi[]> {
+/** Semua transaksi akun ini dalam satu bulan (YYYY-MM), terbaru dulu. */
+export async function daftarTransaksi(db: Client, penggunaId: number, bulan: string): Promise<Transaksi[]> {
   const { rows } = await db.execute({
-    sql: `${SELECT_TRANSAKSI} WHERE t.tanggal BETWEEN ? AND ? ORDER BY t.tanggal DESC, t.id DESC`,
-    args: [`${bulan}-01`, `${bulan}-31`],
+    sql: `${SELECT_TRANSAKSI} WHERE t.pengguna_id = ? AND t.tanggal BETWEEN ? AND ? ORDER BY t.tanggal DESC, t.id DESC`,
+    args: [penggunaId, `${bulan}-01`, `${bulan}-31`],
   });
   return rows.map((r) => keTransaksi(r as Record<string, unknown>));
 }
 
 async function sisipkan(
   db: Client,
+  penggunaId: number,
   data: { tanggal: string; nominal: number; jenis: Jenis; arah: Arah; kategoriId: number | null; deskripsi: string; teksAsli: string; sumber: Sumber },
   waktu: Date,
 ): Promise<Transaksi> {
   const res = await db.execute({
-    sql: `INSERT INTO transaksi (tanggal, nominal, jenis, arah, kategori_id, deskripsi, teks_asli, sumber, dibuat_pada)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [data.tanggal, data.nominal, data.jenis, data.arah, data.jenis === "usaha" ? null : data.kategoriId,
+    sql: `INSERT INTO transaksi (pengguna_id, tanggal, nominal, jenis, arah, kategori_id, deskripsi, teks_asli, sumber, dibuat_pada)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [penggunaId, data.tanggal, data.nominal, data.jenis, data.arah, data.jenis === "usaha" ? null : data.kategoriId,
       data.deskripsi, data.teksAsli, data.sumber, waktu.toISOString()],
   });
-  return (await ambilTransaksi(db, Number(res.lastInsertRowid)))!;
+  return (await ambilTransaksi(db, penggunaId, Number(res.lastInsertRowid)))!;
 }
 
 // ---------- mencatat dari teks ----------
@@ -159,12 +166,12 @@ export async function catatTeks(deps: Deps, teks: string): Promise<HasilCatat> {
   const baca = bacaInput(teks, sekarang);
   if (!baca.ok) return baca;
 
-  const { db, ai } = deps;
-  const kategori = await daftarKategori(db);
+  const { db, ai, penggunaId } = deps;
+  const kategori = await daftarKategori(db, penggunaId);
   let aiTersedia = ai.aktif;
 
   // Langkah 1: cek memori untuk tiap item.
-  const cekMemori = await Promise.all(baca.items.map((item) => cariMemori(db, item.deskripsi)));
+  const cekMemori = await Promise.all(baca.items.map((item) => cariMemori(db, penggunaId, item.deskripsi)));
 
   // Langkah 2: item yang tidak ketemu (atau jenisnya bertentangan dengan tanda +) ditanya ke AI, paralel.
   const tebakan = await Promise.all(
@@ -175,7 +182,7 @@ export async function catatTeks(deps: Deps, teks: string): Promise<HasilCatat> {
       return ai.tebakKategori({
         deskripsi: item.deskripsi,
         kategori: kategori.map((k) => ({ nama: k.nama, jenis: k.jenis })),
-        contoh: await contohMirip(db, item.deskripsi),
+        contoh: await contohMirip(db, penggunaId, item.deskripsi),
       });
     }),
   );
@@ -189,7 +196,7 @@ export async function catatTeks(deps: Deps, teks: string): Promise<HasilCatat> {
 
     if (!t && m) {
       await tandaiDipakai(db, m.id, sekarang);
-      const trx = await sisipkan(db, {
+      const trx = await sisipkan(db, penggunaId, {
         ...dasar, jenis: m.jenis, arah: arahUntuk(m.jenis, item.deskripsi), kategoriId: m.kategoriId, sumber: "memori",
       }, sekarang);
       hasil.push({ transaksi: trx, tanya: null });
@@ -200,14 +207,14 @@ export async function catatTeks(deps: Deps, teks: string): Promise<HasilCatat> {
       const n = nilaiTebakan(t.data, kategori, item.jenisPasti);
       const arah = arahUntuk(n.jenis, item.deskripsi, n.arah);
       if (n.yakin) {
-        const trx = await sisipkan(db, { ...dasar, jenis: n.jenis, arah, kategoriId: n.kategoriId, sumber: "ai" }, sekarang);
+        const trx = await sisipkan(db, penggunaId, { ...dasar, jenis: n.jenis, arah, kategoriId: n.kategoriId, sumber: "ai" }, sekarang);
         // Disimpan ke memori supaya input yang sama berikutnya tidak memanggil AI lagi.
-        await simpanMemori(db, { deskripsi: item.deskripsi, jenis: n.jenis, kategoriId: n.kategoriId, asal: "ai" }, sekarang);
+        await simpanMemori(db, penggunaId, { deskripsi: item.deskripsi, jenis: n.jenis, kategoriId: n.kategoriId, asal: "ai" }, sekarang);
         hasil.push({ transaksi: trx, tanya: null });
       } else {
         // Ragu: simpan dengan jenis tebakan (atau default) tapi tanpa kategori.
         const jenis = n.tanyaJenis ? (item.jenisPasti ?? "pengeluaran") : n.jenis;
-        const trx = await sisipkan(db, {
+        const trx = await sisipkan(db, penggunaId, {
           ...dasar, jenis, arah: arahUntuk(jenis, item.deskripsi, arah), kategoriId: null, sumber: "tanya_balik",
         }, sekarang);
         hasil.push({ transaksi: trx, tanya: { tanyaJenis: n.tanyaJenis } });
@@ -218,7 +225,7 @@ export async function catatTeks(deps: Deps, teks: string): Promise<HasilCatat> {
     // AI tidak tersedia (nonaktif, error, lambat, kuota habis): langsung tanya balik.
     if (t && !t.ok && t.alasan !== "tidak_aktif") aiTersedia = false;
     const jenis = item.jenisPasti ?? "pengeluaran";
-    const trx = await sisipkan(db, {
+    const trx = await sisipkan(db, penggunaId, {
       ...dasar, jenis, arah: arahUntuk(jenis, item.deskripsi), kategoriId: null, sumber: "tanya_balik",
     }, sekarang);
     hasil.push({ transaksi: trx, tanya: { tanyaJenis: !item.jenisPasti } });
@@ -238,17 +245,18 @@ export interface PilihanKategori {
 /** Jawaban panel tanya balik: tetapkan jenis + kategori, lalu ingat di memori. */
 export async function jawabTanya(deps: Deps, id: number, pilihan: PilihanKategori): Promise<Transaksi> {
   const sekarang = deps.sekarang?.() ?? new Date();
-  const lama = await ambilTransaksi(deps.db, id);
+  const { db, penggunaId } = deps;
+  const lama = await ambilTransaksi(db, penggunaId, id);
   if (!lama) throw new KesalahanInput("Transaksi tidak ditemukan");
   const jenis = cekJenis(pilihan.jenis);
-  const kategoriId = await tentukanKategori(deps.db, jenis, pilihan);
+  const kategoriId = await tentukanKategori(db, penggunaId, jenis, pilihan);
 
-  await deps.db.execute({
-    sql: "UPDATE transaksi SET jenis = ?, arah = ?, kategori_id = ?, sumber = 'tanya_balik' WHERE id = ?",
-    args: [jenis, arahUntuk(jenis, lama.deskripsi), kategoriId, id],
+  await db.execute({
+    sql: "UPDATE transaksi SET jenis = ?, arah = ?, kategori_id = ?, sumber = 'tanya_balik' WHERE id = ? AND pengguna_id = ?",
+    args: [jenis, arahUntuk(jenis, lama.deskripsi), kategoriId, id, penggunaId],
   });
-  await simpanMemori(deps.db, { deskripsi: lama.deskripsi, jenis, kategoriId, asal: "tanya_balik" }, sekarang);
-  return (await ambilTransaksi(deps.db, id))!;
+  await simpanMemori(db, penggunaId, { deskripsi: lama.deskripsi, jenis, kategoriId, asal: "tanya_balik" }, sekarang);
+  return (await ambilTransaksi(db, penggunaId, id))!;
 }
 
 export interface UbahTransaksi {
@@ -264,7 +272,8 @@ export interface UbahTransaksi {
 /** Edit transaksi. Kalau jenis/kategori berubah, memori ikut diperbarui (PRD fitur 6). */
 export async function editTransaksi(deps: Deps, id: number, ubah: UbahTransaksi): Promise<Transaksi> {
   const sekarang = deps.sekarang?.() ?? new Date();
-  const lama = await ambilTransaksi(deps.db, id);
+  const { db, penggunaId } = deps;
+  const lama = await ambilTransaksi(db, penggunaId, id);
   if (!lama) throw new KesalahanInput("Transaksi tidak ditemukan");
 
   const tanggal = ubah.tanggal !== undefined ? cekTanggal(ubah.tanggal, sekarang) : lama.tanggal;
@@ -274,7 +283,7 @@ export async function editTransaksi(deps: Deps, id: number, ubah: UbahTransaksi)
 
   const gantiKategori = ubah.jenis !== undefined || ubah.kategoriId !== undefined || Boolean(ubah.kategoriBaru);
   const kategoriId = gantiKategori
-    ? await tentukanKategori(deps.db, jenis, {
+    ? await tentukanKategori(db, penggunaId, jenis, {
         kategoriId: ubah.kategoriId !== undefined ? ubah.kategoriId : lama.kategori?.id ?? null,
         kategoriBaru: ubah.kategoriBaru,
       })
@@ -289,17 +298,17 @@ export async function editTransaksi(deps: Deps, id: number, ubah: UbahTransaksi)
   const koreksi = berubah && !lama.perluTanya;
   const sumber: Sumber = lama.perluTanya && berubah ? "tanya_balik" : lama.sumber;
 
-  await deps.db.execute({
+  await db.execute({
     sql: `UPDATE transaksi SET tanggal = ?, nominal = ?, deskripsi = ?, jenis = ?, arah = ?, kategori_id = ?,
             sumber = ?, dikoreksi = CASE WHEN ? = 1 THEN 1 ELSE dikoreksi END
-          WHERE id = ?`,
-    args: [tanggal, nominal, deskripsi, jenis, arah, kategoriId, sumber, koreksi ? 1 : 0, id],
+          WHERE id = ? AND pengguna_id = ?`,
+    args: [tanggal, nominal, deskripsi, jenis, arah, kategoriId, sumber, koreksi ? 1 : 0, id, penggunaId],
   });
   const lengkap = jenis === "usaha" || kategoriId !== null;
   if (lengkap && (berubah || deskripsi !== lama.deskripsi)) {
-    await simpanMemori(deps.db, { deskripsi, jenis, kategoriId, asal: koreksi ? "koreksi" : "tanya_balik" }, sekarang);
+    await simpanMemori(db, penggunaId, { deskripsi, jenis, kategoriId, asal: koreksi ? "koreksi" : "tanya_balik" }, sekarang);
   }
-  return (await ambilTransaksi(deps.db, id))!;
+  return (await ambilTransaksi(db, penggunaId, id))!;
 }
 
 export interface TransaksiManual extends PilihanKategori {
@@ -316,17 +325,17 @@ export async function tambahManual(deps: Deps, data: TransaksiManual): Promise<T
   const nominal = cekNominal(data.nominal);
   const deskripsi = cekDeskripsi(data.deskripsi);
   const jenis = cekJenis(data.jenis);
-  const kategoriId = await tentukanKategori(deps.db, jenis, data);
+  const kategoriId = await tentukanKategori(deps.db, deps.penggunaId, jenis, data);
   const arah = jenis === "investasi" ? (data.arah ?? arahUntuk(jenis, deskripsi)) : arahUntuk(jenis, deskripsi);
 
-  const trx = await sisipkan(deps.db, {
+  const trx = await sisipkan(deps.db, deps.penggunaId, {
     tanggal, nominal, jenis, arah, kategoriId, deskripsi, teksAsli: deskripsi, sumber: "manual",
   }, sekarang);
-  await simpanMemori(deps.db, { deskripsi, jenis, kategoriId, asal: "manual" }, sekarang);
+  await simpanMemori(deps.db, deps.penggunaId, { deskripsi, jenis, kategoriId, asal: "manual" }, sekarang);
   return trx;
 }
 
-export async function hapusTransaksi(db: Client, id: number): Promise<boolean> {
-  const res = await db.execute({ sql: "DELETE FROM transaksi WHERE id = ?", args: [id] });
+export async function hapusTransaksi(db: Client, penggunaId: number, id: number): Promise<boolean> {
+  const res = await db.execute({ sql: "DELETE FROM transaksi WHERE id = ? AND pengguna_id = ?", args: [id, penggunaId] });
   return res.rowsAffected > 0;
 }

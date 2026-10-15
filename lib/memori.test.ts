@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { cariMemori, cocokkan, contohMirip, jarakEdit, normalisasi, simpanMemori, type EntriMemori } from "./memori";
-import { buatDbUji, idKategori } from "./db-uji";
+import { buatDbUji, buatPenggunaUji, idKategori } from "./db-uji";
 
 describe("normalisasi", () => {
   test("huruf kecil, tanda baca & spasi dirapikan", () => {
@@ -62,40 +62,44 @@ describe("cocokkan (tanpa database)", () => {
 describe("memori di database", () => {
   test("simpan lalu cari, termasuk typo", async () => {
     const db = await buatDbUji();
+    const uid = await buatPenggunaUji(db);
     const makan = await idKategori(db, "Makanan & Minuman");
-    await simpanMemori(db, { deskripsi: "Bakmi Effata", jenis: "pengeluaran", kategoriId: makan, asal: "tanya_balik" });
+    await simpanMemori(db, uid, { deskripsi: "Bakmi Effata", jenis: "pengeluaran", kategoriId: makan, asal: "tanya_balik" });
 
-    expect(await cariMemori(db, "bakmi effata")).toMatchObject({ kategoriId: makan, cara: "persis" });
-    expect(await cariMemori(db, "bakmi efata")).toMatchObject({ kategoriId: makan, cara: "mirip" });
-    expect(await cariMemori(db, "rasela")).toBeNull();
+    expect(await cariMemori(db, uid, "bakmi effata")).toMatchObject({ kategoriId: makan, cara: "persis" });
+    expect(await cariMemori(db, uid, "bakmi efata")).toMatchObject({ kategoriId: makan, cara: "mirip" });
+    expect(await cariMemori(db, uid, "rasela")).toBeNull();
   });
 
   test("simpan ulang deskripsi yang sama memperbarui kategori (koreksi)", async () => {
     const db = await buatDbUji();
+    const uid = await buatPenggunaUji(db);
     const makan = await idKategori(db, "Makanan & Minuman");
     const belanja = await idKategori(db, "Belanja");
-    await simpanMemori(db, { deskripsi: "rasela", jenis: "pengeluaran", kategoriId: makan, asal: "ai" });
-    await simpanMemori(db, { deskripsi: "rasela", jenis: "pengeluaran", kategoriId: belanja, asal: "koreksi" });
+    await simpanMemori(db, uid, { deskripsi: "rasela", jenis: "pengeluaran", kategoriId: makan, asal: "ai" });
+    await simpanMemori(db, uid, { deskripsi: "rasela", jenis: "pengeluaran", kategoriId: belanja, asal: "koreksi" });
 
-    expect(await cariMemori(db, "rasela")).toMatchObject({ kategoriId: belanja });
+    expect(await cariMemori(db, uid, "rasela")).toMatchObject({ kategoriId: belanja });
     const { rows } = await db.execute("SELECT COUNT(*) AS n FROM memori");
     expect(Number(rows[0].n)).toBe(1);
   });
 
   test("jenis usaha disimpan tanpa kategori", async () => {
     const db = await buatDbUji();
+    const uid = await buatPenggunaUji(db);
     const gaji = await idKategori(db, "Gaji");
-    await simpanMemori(db, { deskripsi: "gaji budi", jenis: "usaha", kategoriId: gaji, asal: "tanya_balik" });
-    expect(await cariMemori(db, "gaji budi")).toMatchObject({ jenis: "usaha", kategoriId: null });
+    await simpanMemori(db, uid, { deskripsi: "gaji budi", jenis: "usaha", kategoriId: gaji, asal: "tanya_balik" });
+    expect(await cariMemori(db, uid, "gaji budi")).toMatchObject({ jenis: "usaha", kategoriId: null });
   });
 
   test("contohMirip mengambil entri yang berbagi kata", async () => {
     const db = await buatDbUji();
+    const uid = await buatPenggunaUji(db);
     const makan = await idKategori(db, "Makanan & Minuman");
-    await simpanMemori(db, { deskripsi: "kopi gereja", jenis: "pengeluaran", kategoriId: makan, asal: "manual" });
-    await simpanMemori(db, { deskripsi: "bensin", jenis: "pengeluaran", kategoriId: null, asal: "manual" });
+    await simpanMemori(db, uid, { deskripsi: "kopi gereja", jenis: "pengeluaran", kategoriId: makan, asal: "manual" });
+    await simpanMemori(db, uid, { deskripsi: "bensin", jenis: "pengeluaran", kategoriId: null, asal: "manual" });
 
-    expect(await contohMirip(db, "kopi kenangan")).toEqual([
+    expect(await contohMirip(db, uid, "kopi kenangan")).toEqual([
       { kataKunci: "kopi gereja", jenis: "pengeluaran", kategori: "Makanan & Minuman" },
     ]);
   });

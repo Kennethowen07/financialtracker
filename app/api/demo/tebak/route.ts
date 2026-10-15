@@ -1,8 +1,9 @@
 // POST /api/demo/tebak  { deskripsi, contoh? }
 // Satu-satunya pintu AI untuk mode demo. Mengurangi kuota hanya kalau benar-benar memanggil AI.
 import { KATEGORI_BAWAAN } from "@/lib/kategori-bawaan";
+import { db } from "@/lib/db";
 import { hashIp, pakaiKuota, sisaKuota } from "@/lib/kuota";
-import { bacaJson, deps } from "@/lib/server";
+import { bacaJson, layananAI } from "@/lib/server";
 import { hariIni } from "@/lib/tanggal";
 
 function alamatIp(request: Request): string {
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
       }))
     : [];
 
-  const { db, ai } = deps();
+  const ai = layananAI();
   const ip = await hashIp(alamatIp(request));
   const tanggal = hariIni();
   if (!ai.aktif) return Response.json({ ok: false, alasan: "tidak_aktif", sisa: 0 });

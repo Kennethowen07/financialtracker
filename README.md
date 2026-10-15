@@ -22,9 +22,12 @@ npm run db:setup      # buat tabel + isi kategori (file local.db)
 npm run dev           # buka http://localhost:3000
 ```
 
-Tanpa file `.env.local`, aplikasi tetap jalan: database memakai `local.db`, login dilewati,
-dan AI dianggap mati (semua input baru memunculkan tanya balik). Untuk mengaktifkan AI,
-salin `.env.example` menjadi `.env.local` lalu isi `GEMINI_API_KEY`.
+Tanpa file `.env.local`, aplikasi tetap jalan: database memakai `local.db`, AI dianggap mati
+(semua input baru memunculkan tanya balik), dan halaman `/masuk` menyediakan **login developer**
+(ketik email apa saja, tanpa Google; hanya ada di laptop). Untuk mengaktifkan AI dan login Google,
+salin `.env.example` menjadi `.env.local` lalu isi nilainya (lihat [docs/DEPLOY.md](docs/DEPLOY.md)).
+
+Setiap akun hanya melihat datanya sendiri. Akun dengan email `ADMIN_EMAIL` menjadi admin.
 
 Halaman:
 
@@ -32,8 +35,10 @@ Halaman:
 | --- | --- |
 | `/` | Dashboard + kotak input (HP dan laptop) |
 | `/analisis` | Analisis AI bulanan (tombol Perbarui) |
-| `/demo` | Mode demo: data di browser pengunjung, kuota 2 panggilan AI |
-| `/masuk` | Login (aktif kalau `APP_PASSWORD` diisi) |
+| `/akun` | Info akun dan tombol keluar (dibuka dari ikon orang di HP) |
+| `/admin` | Daftar akun, nonaktifkan akun (khusus admin) |
+| `/demo` | Mode demo tanpa akun: data di browser pengunjung, kuota 2 panggilan AI |
+| `/masuk` | Login dengan Google (dan login developer di laptop) |
 
 ## Perintah
 
@@ -62,10 +67,10 @@ Halaman:
 ```
 app/              halaman (page.tsx) dan API (api/**/route.ts)
 components/       komponen React (Dasbor, panel tanya balik, form, analisis, demo)
-lib/              logika: parser, tanggal, memori, ai, transaksi, laporan, kuota, sesi
+lib/              logika: parser, tanggal, memori, ai, transaksi, laporan, kuota, akun, google, sesi
 db/schema.sql     skema database
 scripts/          db-setup dan import spreadsheet
-proxy.ts          proteksi login
+proxy.ts          proteksi login (halaman & API pribadi wajib login)
 docs/             PRD, desain, keputusan, panduan deploy
 legacy/           kode versi lama (Express + bot Telegram), tidak dipakai lagi
 ```

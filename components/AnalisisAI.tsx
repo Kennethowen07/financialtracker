@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import type { InfoAkun } from "@/lib/akun";
 import type { Analisis } from "@/lib/analisis";
 import type { RingkasanBulan } from "@/lib/laporan";
 import { namaBulan, rupiah } from "@/lib/format";
@@ -16,9 +17,10 @@ interface Props {
   analisis: Analisis | null;
   palingSering: RingkasanBulan["palingSering"];
   aiAktif: boolean;
+  akun: InfoAkun;
 }
 
-export function AnalisisAI({ bulan, bulanIni, analisis: awal, palingSering, aiAktif }: Props) {
+export function AnalisisAI({ bulan, bulanIni, analisis: awal, palingSering, aiAktif, akun }: Props) {
   const router = useRouter();
   const [analisis, setAnalisis] = useState(awal);
   const [sibuk, setSibuk] = useState(false);
@@ -48,7 +50,7 @@ export function AnalisisAI({ bulan, bulanIni, analisis: awal, palingSering, aiAk
   const kalimat = analisis?.isi.split(/(?<=[.!?])\s+/).filter(Boolean) ?? [];
 
   return (
-    <Kerangka aktif="analisis">
+    <Kerangka aktif="analisis" akun={akun}>
       <header className="atas analisis-atas">
         <div className="atas-kiri">
           <Link href="/" className="tombol-bulat kembali" aria-label="Kembali ke dashboard">

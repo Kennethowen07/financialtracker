@@ -98,21 +98,26 @@ function keEntri(row: Record<string, unknown>): EntriMemori {
   };
 }
 
-export async function semuaMemori(client: Client): Promise<EntriMemori[]> {
-  const { rows } = await client.execute("SELECT id, kata_kunci, jenis, kategori_id FROM memori");
+// Setiap akun punya memorinya sendiri, jadi semua query difilter pengguna_id.
+
+export async function semuaMemori(client: Client, penggunaId: number): Promise<EntriMemori[]> {
+  const { rows } = await client.execute({
+    sql: "SELECT id, kata_kunci, jenis, kategori_id FROM memori WHERE pengguna_id = ?",
+    args: [penggunaId],
+  });
   return rows.map((r) => keEntri(r as Record<string, unknown>));
 }
 
 /** Cari di memori database. Persis lewat index dulu, baru pencocokan typo di semua entri. */
-export async function cariMemori(client: Client, deskripsi: string): Promise<CocokMemori | null> {
+export async function cariMemori(client: Client, penggunaId: number, deskripsi: string): Promise<CocokMemori | null> {
   const kunci = normalisasi(deskripsi);
   if (!kunci) return null;
   const { rows } = await client.execute({
-    sql: "SELECT id, kata_kunci, jenis, kategori_id FROM memori WHERE kata_kunci = ?",
-    args: [kunci],
+    sql: "SELECT id, kata_kunci, jenis, kategori_id FROM memori WHERE pengguna_id = ? AND kata_kunci = ?",
+    args: [penggunaId, kunci],
   });
   if (rows[0]) return { ...keEntri(rows[0] as Record<string, unknown>), cara: "persis" };
-  return cocokkan(kunci, await semuaMemori(client));
+  return cocokkan(kunci, await semuaMemori(client, penggunaId));
 }
 
 export async function tandaiDipakai(client: Client, id: number, waktu = new Date()): Promise<void> {
@@ -125,20 +130,21 @@ export async function tandaiDipakai(client: Client, id: number, waktu = new Date
 /** Simpan atau perbarui memori untuk satu deskripsi. */
 export async function simpanMemori(
   client: Client,
+  penggunaId: number,
   data: { deskripsi: string; jenis: Jenis; kategoriId: number | null; asal: AsalMemori },
   waktu = new Date(),
 ): Promise<void> {
   const kunci = normalisasi(data.deskripsi);
   if (!kunci) return;
   await client.execute({
-    sql: `INSERT INTO memori (kata_kunci, jenis, kategori_id, asal, terakhir_dipakai)
-          VALUES (?, ?, ?, ?, ?)
-          ON CONFLICT (kata_kunci) DO UPDATE SET
+    sql: `INSERT INTO memori (pengguna_id, kata_kunci, jenis, kategori_id, asal, terakhir_dipakai)
+          VALUES (?, ?, ?, ?, ?, ?)
+          ON CONFLICT (pengguna_id, kata_kunci) DO UPDATE SET
             jenis = excluded.jenis,
             kategori_id = excluded.kategori_id,
             asal = excluded.asal,
             terakhir_dipakai = excluded.terakhir_dipakai`,
-    args: [kunci, data.jenis, data.jenis === "usaha" ? null : data.kategoriId, data.asal, waktu.toISOString()],
+    args: [penggunaId, kunci, data.jenis, data.jenis === "usaha" ? null : data.kategoriId, data.asal, waktu.toISOString()],
   });
 }
 
@@ -148,15 +154,18 @@ export async function simpanMemori(
  */
 export async function contohMirip(
   client: Client,
+  penggunaId: number,
   deskripsi: string,
   batas = 5,
 ): Promise<{ kataKunci: string; jenis: Jenis; kategori: string | null }[]> {
   const kata = new Set(normalisasi(deskripsi).split(" ").filter((k) => k.length >= 3));
   if (kata.size === 0) return [];
-  const { rows } = await client.execute(`
-    SELECT m.kata_kunci, m.jenis, k.nama AS kategori, m.terakhir_dipakai
-    FROM memori m LEFT JOIN kategori k ON k.id = m.kategori_id
-  `);
+  const { rows } = await client.execute({
+    sql: `SELECT m.kata_kunci, m.jenis, k.nama AS kategori, m.terakhir_dipakai
+          FROM memori m LEFT JOIN kategori k ON k.id = m.kategori_id
+          WHERE m.pengguna_id = ?`,
+    args: [penggunaId],
+  });
   return rows
     .map((r) => {
       const kunci = String(r.kata_kunci);

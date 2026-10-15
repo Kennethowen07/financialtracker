@@ -1,13 +1,10 @@
-import { connection } from "next/server";
 import { daftarKategori } from "@/lib/kategori";
-import { deps, tanganiError } from "@/lib/server";
+import { denganPengguna, deps } from "@/lib/server";
 
-// GET /api/kategori
+// GET /api/kategori → kategori bawaan + kategori buatan akun ini
 export async function GET() {
-  await connection(); // selalu baca dari database, termasuk kategori buatan pengguna
-  try {
-    return Response.json(await daftarKategori(deps().db));
-  } catch (err) {
-    return tanganiError(err);
-  }
+  return denganPengguna(async (pengguna) => {
+    const { db, penggunaId } = deps(pengguna);
+    return Response.json(await daftarKategori(db, penggunaId));
+  });
 }

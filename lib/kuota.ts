@@ -42,3 +42,23 @@ export async function pakaiKuota(db: Client, ip: string, tanggal: string, batas 
   });
   return res.rowsAffected > 0;
 }
+
+// ---------- kuota AI per akun ----------
+// Pendaftaran terbuka, sedangkan kuota Gemini gratis dipakai bersama. Supaya satu akun tidak
+// menghabiskan jatah semua orang, akun biasa dibatasi per hari. Admin tidak dibatasi.
+
+export function batasAiPengguna(): number {
+  return Number(process.env.AI_BATAS_PENGGUNA) || 30;
+}
+
+/** Pakai satu kuota AI akun ini. false kalau jatah hari ini sudah habis. Satu perintah SQL (atomik). */
+export async function pakaiKuotaPengguna(db: Client, penggunaId: number, tanggal: string, batas = batasAiPengguna()): Promise<boolean> {
+  if (batas < 1) return false;
+  const res = await db.execute({
+    sql: `INSERT INTO kuota_ai (pengguna_id, tanggal, jumlah) VALUES (?, ?, 1)
+          ON CONFLICT (pengguna_id, tanggal) DO UPDATE SET jumlah = jumlah + 1
+          WHERE kuota_ai.jumlah < ?`,
+    args: [penggunaId, tanggal, batas],
+  });
+  return res.rowsAffected > 0;
+}

@@ -1107,11 +1107,191 @@ a {
 }
 
 .sidebar-keluar {
-  margin-top: auto;
   border: 0;
   background: none;
   text-align: left;
   width: 100%;
+}
+
+.masuk-sub {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.masuk-sub b {
+  color: var(--text);
+}
+
+.tombol-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  border-radius: var(--pill);
+  background: #fff;
+  color: #1f1f1f;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.masuk-catatan {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--warn);
+}
+
+.masuk-dev {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px dashed #333;
+}
+
+.masuk-dev-label {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+/* ================= akun & admin ================= */
+
+.atas-tombol {
+  display: flex;
+  gap: 8px;
+}
+
+.judul-halaman {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.atas.atas-judul {
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.kartu-akun {
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px;
+}
+
+.akun-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--pill);
+  background: var(--grad-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.akun-teks,
+.pengguna-teks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.akun-nama,
+.pengguna-nama {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.akun-email,
+.pengguna-email {
+  font-size: 14px;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+.akun-catatan {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.lencana {
+  padding: 2px 8px;
+  border-radius: var(--pill);
+  background: #1d3a33;
+  color: var(--accent-light);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lencana.merah {
+  background: #3a2424;
+  color: var(--danger);
+}
+
+.tombol-kedua {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #333;
+  border-radius: var(--pill);
+  background: none;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tombol-keluar {
+  color: var(--danger);
+  border-color: #3a2a2a;
+}
+
+.daftar-pengguna {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.pengguna-baris {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.pengguna-baris.nonaktif .pengguna-teks {
+  opacity: 0.55;
+}
+
+.pengguna-nama {
+  font-size: 15px;
+}
+
+.pengguna-info {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.tombol-kecil {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #333;
+  border-radius: var(--pill);
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 /* ================= Analisis AI (desain 05b) ================= */
@@ -1292,8 +1472,57 @@ code {
     font-size: 26px;
   }
 
-  .tombol-bintang {
+  .tombol-bintang,
+  .atas-tombol {
     display: none;
+  }
+
+  .sidebar-akun {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 12px;
+    border-top: 1px solid #222;
+  }
+
+  .sidebar-akun-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    text-decoration: none;
+    min-width: 0;
+  }
+
+  .sidebar-akun-info:hover,
+  .sidebar-akun-info[aria-current="page"] {
+    background: #1d1d1d;
+  }
+
+  .sidebar-akun-nama {
+    font-size: 14px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sidebar-akun-email {
+    font-size: 12px;
+    color: var(--text-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .kartu-akun {
+    max-width: 480px;
+  }
+
+  .judul-halaman {
+    font-size: 26px;
   }
 
   .kotak-input {

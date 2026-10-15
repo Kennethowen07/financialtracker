@@ -1,9 +1,11 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { redirect } from "next/navigation";
 import { AnalisisAI } from "@/components/AnalisisAI";
 import { ambilAnalisis } from "@/lib/analisis";
 import { db } from "@/lib/db";
 import { ringkas } from "@/lib/laporan";
+import { penggunaSaatIni } from "@/lib/server";
 import { bulanSebelumnya, hariIni } from "@/lib/tanggal";
 import { daftarTransaksi } from "@/lib/transaksi";
 
@@ -11,15 +13,18 @@ export const metadata = { title: "Analisis AI · Financial Detector" };
 
 async function HalamanAnalisis({ searchParams }: PageProps<"/analisis">) {
   await connection();
+  const pengguna = await penggunaSaatIni();
+  if (!pengguna) redirect("/masuk");
+
   const tanggal = hariIni();
   const bulanIni = tanggal.slice(0, 7);
   const diminta = (await searchParams).bulan;
   const bulan = typeof diminta === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(diminta) && diminta <= bulanIni ? diminta : bulanIni;
 
   const [analisis, ini, lalu] = await Promise.all([
-    ambilAnalisis(db, bulan),
-    daftarTransaksi(db, bulan),
-    daftarTransaksi(db, bulanSebelumnya(bulan)),
+    ambilAnalisis(db, pengguna.id, bulan),
+    daftarTransaksi(db, pengguna.id, bulan),
+    daftarTransaksi(db, pengguna.id, bulanSebelumnya(bulan)),
   ]);
   const r = ringkas(bulan, ini, lalu, tanggal);
 
@@ -31,6 +36,7 @@ async function HalamanAnalisis({ searchParams }: PageProps<"/analisis">) {
       analisis={analisis}
       palingSering={r.palingSering}
       aiAktif={Boolean(process.env.GEMINI_API_KEY)}
+      akun={{ nama: pengguna.nama, email: pengguna.email, admin: pengguna.admin }}
     />
   );
 }
