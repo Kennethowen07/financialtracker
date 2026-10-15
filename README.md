@@ -24,7 +24,7 @@ npm run dev           # buka http://localhost:3000
 
 Tanpa file `.env.local`, aplikasi tetap jalan: database memakai `local.db`, AI dianggap mati
 (semua input baru memunculkan tanya balik), dan halaman `/masuk` menyediakan **login developer**
-(ketik email apa saja, tanpa Google; hanya ada di laptop). Untuk mengaktifkan AI dan login Google,
+(ketik email apa saja, tanpa Google; hanya ada di laptop dan hanya saat memakai `local.db`, bukan Turso). Untuk mengaktifkan AI dan login Google,
 salin `.env.example` menjadi `.env.local` lalu isi nilainya (lihat [docs/DEPLOY.md](docs/DEPLOY.md)).
 
 Setiap akun hanya melihat datanya sendiri. Akun dengan email `ADMIN_EMAIL` menjadi admin.
@@ -59,7 +59,8 @@ Halaman:
 2. `npm run import:siapkan`. Kalau `GEMINI_API_KEY` diisi, kolom kategori langsung berisi tebakan AI.
 3. Buka `data/import/deskripsi.csv`, periksa kolom `jenis` dan `kategori` (nama persis seperti di aplikasi;
    usaha dibiarkan kosong).
-4. `npm run import:jalankan`. Kalau ada yang salah di CSV, tidak ada yang disimpan dan masalahnya ditampilkan.
+4. Pastikan `ADMIN_EMAIL` diisi dan akun itu sudah pernah login sekali (data import masuk ke akun admin).
+5. `npm run import:jalankan`. Kalau ada yang salah di CSV, tidak ada yang disimpan dan masalahnya ditampilkan.
    Untuk mengulang import: `npm run import:jalankan -- --ulang`.
 
 ## Struktur

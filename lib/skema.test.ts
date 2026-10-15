@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { createClient, type Client } from "@libsql/client";
-import { masuk } from "./akun";
-import { buatDbUji } from "./db-uji";
+import { buatDbUji, masukUji } from "./db-uji";
+import { daftarKategori, KesalahanInput, tentukanKategori } from "./kategori";
 import { siapkanDatabase } from "./skema";
 
 // Skema versi sebelum ada akun (db/schema.sql di commit sebelum multi-akun).
@@ -92,16 +92,29 @@ describe("migrasi database lama ke multi-akun", () => {
     expect(await hitung(db, "SELECT COUNT(*) AS n FROM transaksi")).toBe(2);
   });
 
+  test("sebelum admin login, kategori 'ketik sendiri' lama tidak terlihat akun lain", async () => {
+    const db = await dbLama();
+    await siapkanDatabase(db);
+    const andi = await masukUji(db, { email: "andi@uji.id", nama: "Andi" }, new Date(), "bos@uji.id");
+    const hewan = await hitung(db, "SELECT id AS n FROM kategori WHERE nama = 'Hewan'");
+
+    expect((await daftarKategori(db, andi.id)).map((k) => k.nama)).not.toContain("Hewan");
+    await expect(tentukanKategori(db, andi.id, "pengeluaran", { kategoriId: hewan })).rejects.toThrow(KesalahanInput);
+    // Mengetik nama yang sama membuat kategori milik Andi sendiri, bukan memakai yang lama.
+    const punyaAndi = await tentukanKategori(db, andi.id, "pengeluaran", { kategoriBaru: "Hewan" });
+    expect(punyaAndi).not.toBe(hewan);
+  });
+
   test("setelah admin login, data lama jadi miliknya; aturan unik sekarang per akun", async () => {
     const db = await dbLama();
     await siapkanDatabase(db);
-    const bos = (await masuk(db, { email: "bos@uji.id", nama: "Bos" }, new Date(), "bos@uji.id"))!;
+    const bos = (await masukUji(db, { email: "bos@uji.id", nama: "Bos" }, new Date(), "bos@uji.id"));
 
     expect(await hitung(db, `SELECT COUNT(*) AS n FROM transaksi WHERE pengguna_id = ${bos.id}`)).toBe(2);
     expect(await hitung(db, `SELECT COUNT(*) AS n FROM kategori WHERE pengguna_id = ${bos.id}`)).toBe(1); // "Hewan"
 
     // Akun lain boleh punya memori "rasela" dan analisis bulan yang sama.
-    const andi = (await masuk(db, { email: "andi@uji.id", nama: "Andi" }, new Date(), "bos@uji.id"))!;
+    const andi = (await masukUji(db, { email: "andi@uji.id", nama: "Andi" }, new Date(), "bos@uji.id"));
     await db.execute({
       sql: "INSERT INTO memori (pengguna_id, kata_kunci, jenis, asal, terakhir_dipakai) VALUES (?, 'rasela', 'pengeluaran', 'manual', 'x')",
       args: [andi.id],

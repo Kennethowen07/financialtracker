@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import type { Client } from "@libsql/client";
 import { AI_NONAKTIF, type HasilAI, type InputTebak, type LayananAI, type TebakanKategori } from "./ai";
 import { buatDbUji, buatPenggunaUji, idKategori } from "./db-uji";
+import { tentukanKategori } from "./kategori";
 import { cariMemori, simpanMemori } from "./memori";
 import { catatTeks, daftarTransaksi, editTransaksi, hapusTransaksi, jawabTanya, tambahManual, type Deps } from "./transaksi";
 
@@ -189,6 +190,13 @@ describe("jalur 3: Gemini ragu atau gagal → tanya balik", () => {
     const trx = harusOk(await catatTeks(deps, "pakan kucing 50000")).hasil[0].transaksi;
     const dijawab = await jawabTanya(deps, trx.id, { jenis: "pengeluaran", kategoriBaru: "Hewan Peliharaan" });
     expect(dijawab.kategori?.nama).toBe("Hewan Peliharaan");
+  });
+
+  test("dua permintaan membuat kategori yang sama bersamaan → tetap satu kategori", async () => {
+    const deps = await siapkan(aiTiruan(() => ragu));
+    const buat = () => tentukanKategori(deps.db, deps.penggunaId, "pengeluaran", { kategoriBaru: "Hewan" });
+    const [a, b] = await Promise.all([buat(), buat()]);
+    expect(a).toBe(b);
   });
 });
 

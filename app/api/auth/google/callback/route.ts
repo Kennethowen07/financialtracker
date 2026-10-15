@@ -24,9 +24,9 @@ export async function GET(request: NextRequest) {
     const profil = periksaIdToken(idToken, process.env.GOOGLE_CLIENT_ID ?? "");
     if (!profil) return ke("/masuk?galat=gagal");
 
-    const pengguna = await masuk(db, profil);
-    if (!pengguna) return ke("/masuk?galat=nonaktif");
-    return pasangSesi(ke("/"), pengguna.id);
+    const hasil = await masuk(db, profil);
+    if (typeof hasil === "string") return ke(`/masuk?galat=${hasil}`); // nonaktif | bentrok
+    return pasangSesi(ke("/"), hasil.id);
   } catch (err) {
     console.error("[auth] login Google gagal:", err instanceof Error ? err.message : err);
     return ke("/masuk?galat=gagal");

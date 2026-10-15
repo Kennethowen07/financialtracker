@@ -43,29 +43,46 @@ export interface ProfilMasuk {
 
 /**
  * Dipanggil setiap kali seseorang berhasil login. Membuat akun baru kalau belum ada.
- * Mengembalikan null kalau akunnya sudah dinonaktifkan admin.
+ * - "nonaktif": akunnya sudah dinonaktifkan admin.
+ * - "bentrok": emailnya sudah dipakai akun Google LAIN (mis. alamat kantor/sekolah yang
+ *   dipakai ulang orang lain). Ditolak supaya orang baru tidak mewarisi data pemilik lama.
  */
-export async function masuk(db: Client, profil: ProfilMasuk, sekarang = new Date(), admin = emailAdmin()): Promise<Pengguna | null> {
+export async function masuk(
+  db: Client,
+  profil: ProfilMasuk,
+  sekarang = new Date(),
+  admin = emailAdmin(),
+): Promise<Pengguna | "nonaktif" | "bentrok"> {
   const email = profil.email.trim().toLowerCase();
   const nama = profil.nama.trim().slice(0, 80) || email.split("@")[0];
   const googleId = profil.googleId || null;
   const waktu = sekarang.toISOString();
 
-  // Cari lewat id Google dulu (tetap sama walau email diganti), lalu lewat email.
+  // Cari lewat id Google dulu (tetap sama walau email diganti). Lewat email hanya untuk akun
+  // yang belum tersambung ke Google (akun login developer).
   let lama = googleId
     ? (await db.execute({ sql: "SELECT id, aktif FROM pengguna WHERE google_id = ?", args: [googleId] })).rows[0]
     : undefined;
-  lama ??= (await db.execute({ sql: "SELECT id, aktif FROM pengguna WHERE email = ?", args: [email] })).rows[0];
+  lama ??= (await db.execute({
+    sql: `SELECT id, aktif FROM pengguna WHERE email = ? ${googleId ? "AND google_id IS NULL" : ""}`,
+    args: [email],
+  })).rows[0];
 
   let id: number;
   if (lama) {
-    if (Number(lama.aktif) !== 1) return null;
+    if (Number(lama.aktif) !== 1) return "nonaktif";
     id = Number(lama.id);
+    // Email baru dari Google hanya disimpan kalau belum dipakai akun lain (email harus unik).
     await db.execute({
-      sql: `UPDATE pengguna SET email = ?, nama = ?, google_id = COALESCE(google_id, ?), terakhir_masuk = ? WHERE id = ?`,
-      args: [email, nama, googleId, waktu, id],
+      sql: `UPDATE pengguna
+            SET email = CASE WHEN EXISTS (SELECT 1 FROM pengguna WHERE email = ? AND id != ?) THEN email ELSE ? END,
+                nama = ?, google_id = COALESCE(google_id, ?), terakhir_masuk = ?
+            WHERE id = ?`,
+      args: [email, id, email, nama, googleId, waktu, id],
     });
   } else {
+    const dipakai = (await db.execute({ sql: "SELECT 1 FROM pengguna WHERE email = ?", args: [email] })).rows[0];
+    if (dipakai) return "bentrok";
     const res = await db.execute({
       sql: `INSERT INTO pengguna (google_id, email, nama, dibuat_pada, terakhir_masuk) VALUES (?, ?, ?, ?, ?)`,
       args: [googleId, email, nama, waktu, waktu],
@@ -73,8 +90,11 @@ export async function masuk(db: Client, profil: ProfilMasuk, sekarang = new Date
     id = Number(res.lastInsertRowid);
   }
 
-  if (admin && email === admin) await klaimDataLama(db, id);
-  return ambilPengguna(db, id, admin);
+  const pengguna = await ambilPengguna(db, id, admin);
+  if (!pengguna) throw new Error("Akun tidak ditemukan setelah login");
+  // Admin dicek dari email yang tersimpan, bukan dari email yang baru dikirim Google.
+  if (pengguna.admin) await klaimDataLama(db, id);
+  return pengguna;
 }
 
 /**

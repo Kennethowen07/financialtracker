@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import type { NextResponse } from "next/server";
 import { buatLayananGemini, denganKuota, type LayananAI } from "./ai";
 import { ambilPengguna, type Pengguna } from "./akun";
-import { db } from "./db";
+import { databaseLokal, db } from "./db";
 import { KesalahanInput } from "./kategori";
 import { pakaiKuotaPengguna } from "./kuota";
 import { bacaToken, buatToken, NAMA_COOKIE, UMUR_SESI_DETIK } from "./sesi";
@@ -16,6 +16,15 @@ let ai: LayananAI | null = null;
 export function layananAI(): LayananAI {
   ai ??= buatLayananGemini();
   return ai;
+}
+
+/**
+ * Login developer (email apa saja, tanpa Google) hanya untuk development dengan database file
+ * di laptop. Kalau .env.local mengarah ke Turso (data asli), login ini mati, karena server dev
+ * bisa dibuka perangkat lain di Wi-Fi yang sama.
+ */
+export function loginDevAktif(): boolean {
+  return process.env.NODE_ENV !== "production" && databaseLokal;
 }
 
 /** Akun yang sedang login (dari cookie sesi), atau null kalau belum login / dinonaktifkan. */

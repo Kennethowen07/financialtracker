@@ -16,5 +16,8 @@ export const db: Client = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN || undefined,
 });
 
+/** true kalau memakai file SQLite di laptop (bukan Turso). */
+export const databaseLokal = url.startsWith("file:");
+
 /** Untuk ditampilkan di log/halaman status, tanpa membocorkan token. */
 export const lokasiDatabase = url.startsWith("file:") ? `file lokal (${url.slice(5)})` : "Turso";
