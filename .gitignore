@@ -48,6 +48,9 @@ next-env.d.ts
 /data/
 /legacy/data/
 
+# catatan rahasia pribadi (password, secret)
+/catatan-rahasia.txt
+
 # data keuangan pribadi & file desain mentah — jangan pernah di-commit
 *.xlsx
 *.csv
