@@ -2,6 +2,7 @@
 // Halaman /tes-suara: tahan untuk bicara, lalu catat apa yang dikembalikan browser dan hasil parser-nya.
 // Tujuannya mengecek pengenal suara bawaan (Web Speech API, id-ID) di iPhone, Safari dan PWA,
 // sebelum fitur aslinya dibangun. Setiap rekaman memakai objek pengenal baru (PRD).
+// Pilihan bahasa dan cara mulai ada untuk memisahkan penyebab error (mis. service-not-allowed di iOS).
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { bacaInput } from "@/lib/parser";
 
@@ -13,6 +14,12 @@ const KALIMAT_TES = [
   "grab tiga puluh tiga ribu",
 ];
 const BATAS_MACET_MS = 4000;
+const PILIHAN_BAHASA = [
+  { nilai: "id-ID", label: "id-ID" },
+  { nilai: "en-US", label: "en-US" },
+  { nilai: "", label: "Bawaan HP" },
+];
+type Cara = "tahan" | "tap";
 const KUNCI_RIWAYAT = "tes-suara-riwayat";
 
 // Tipe minimal, karena webkitSpeechRecognition tidak ada di lib.dom TypeScript.
@@ -29,7 +36,7 @@ interface PengenalSuara {
   interimResults: boolean;
   continuous: boolean;
   onresult: ((e: EventHasil) => void) | null;
-  onerror: ((e: { error: string }) => void) | null;
+  onerror: ((e: { error: string; message?: string }) => void) | null;
   onend: (() => void) | null;
   start(): void;
   stop(): void;
@@ -47,6 +54,11 @@ interface Percobaan {
   mentah: string;
   status: Status;
   error?: string;
+  /** Penjelasan error dari browser, kalau ada. */
+  pesan?: string;
+  /** Kosong berarti bahasa bawaan HP. Tidak ada di riwayat lama. */
+  bahasa?: string;
+  cara?: Cara;
   /** Jeda dari tombol dilepas sampai hasil akhir masuk. */
   jedaMs: number | null;
   parser: string;
@@ -118,7 +130,8 @@ function keTeks(riwayat: Percobaan[], info: string): string {
     .reverse()
     .map((p) =>
       [
-        `#${p.no} ${p.waktu} [${p.mode}] ${p.status}${p.error ? ` (${p.error})` : ""}${p.jedaMs !== null ? `, ${p.jedaMs} ms` : ""}`,
+        `#${p.no} ${p.waktu} [${p.mode}, ${p.cara ?? "tahan"}, ${p.bahasa === undefined ? "id-ID" : p.bahasa || "bawaan"}] ${p.status}${p.error ? ` (${p.error})` : ""}${p.jedaMs !== null ? `, ${p.jedaMs} ms` : ""}`,
+        ...(p.pesan ? [`  pesan  : ${p.pesan}`] : []),
         `  target : ${p.target ?? "-"}`,
         `  mentah : ${p.mentah || "(kosong)"}`,
         `  parser : ${p.parser}`,
@@ -137,9 +150,11 @@ export function TesSuara() {
   const [menunggu, setMenunggu] = useState(false);
   const [sementara, setSementara] = useState("");
   const [disalin, setDisalin] = useState(false);
+  const [bahasa, setBahasa] = useState("id-ID");
+  const [cara, setCara] = useState<Cara>("tahan");
 
   const pengenal = useRef<PengenalSuara | null>(null);
-  const sesi = useRef({ teks: "", ditahan: false, selesai: true, dilepasPada: 0, error: "" });
+  const sesi = useRef({ teks: "", aktif: false, selesai: true, dilepasPada: 0, error: "", pesan: "" });
   const pewaktu = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => pengenal.current?.abort(), []);
@@ -162,22 +177,24 @@ export function TesSuara() {
       mentah: teks,
       status,
       error: s.error || undefined,
+      pesan: s.pesan || undefined,
+      bahasa,
+      cara,
       jedaMs: s.dilepasPada && status === "selesai" ? Date.now() - s.dilepasPada : null,
       parser: ringkasParser(teks),
     };
     tokoRiwayat.ganti([baru, ...lama]);
   }
 
-  function mulai(e: React.PointerEvent<HTMLButtonElement>) {
+  function mulai() {
     const Kelas = ambilPengenal();
     if (!Kelas || !sesi.current.selesai) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
 
     const rec = new Kelas();
-    rec.lang = "id-ID";
+    if (bahasa) rec.lang = bahasa;
     rec.interimResults = true;
     rec.continuous = true;
-    sesi.current = { teks: "", ditahan: true, selesai: false, dilepasPada: 0, error: "" };
+    sesi.current = { teks: "", aktif: true, selesai: false, dilepasPada: 0, error: "", pesan: "" };
 
     rec.onresult = (ev) => {
       let akhir = "";
@@ -192,13 +209,14 @@ export function TesSuara() {
     };
     rec.onerror = (ev) => {
       sesi.current.error = ev.error;
+      sesi.current.pesan = ev.message ?? "";
       if (ev.error !== "no-speech" && ev.error !== "aborted") catat("error");
     };
     rec.onend = () => {
       const s = sesi.current;
       if (s.selesai) return;
       if (s.teks.trim()) catat("selesai");
-      else if (s.ditahan) catat("berhenti_sendiri");
+      else if (s.aktif) catat("berhenti_sendiri");
       else if (s.error) catat("error");
       // Kalau tidak ada teks dan tombol sudah dilepas, biarkan pewaktu macet yang memutuskan.
     };
@@ -214,10 +232,11 @@ export function TesSuara() {
     }
   }
 
+  /** Pengguna selesai bicara: tombol dilepas (mode tahan) atau ditap lagi (mode tap). */
   function lepas() {
     const s = sesi.current;
-    if (!s.ditahan) return;
-    s.ditahan = false;
+    if (!s.aktif) return;
+    s.aktif = false;
     if (s.selesai) return;
     s.dilepasPada = Date.now();
     setMerekam(false);
@@ -280,6 +299,27 @@ export function TesSuara() {
         </div>
       </section>
 
+      <section>
+        <h2>Pengaturan</h2>
+        <p className="tes-sub">Untuk mencari penyebab error. Tiap percobaan mencatat pilihan yang dipakai.</p>
+        <div className="tes-daftar">
+          <span className="tes-label">Bahasa</span>
+          {PILIHAN_BAHASA.map((b) => (
+            <button key={b.label} type="button" className={b.nilai === bahasa ? "tes-kalimat aktif" : "tes-kalimat"} disabled={merekam || menunggu} onClick={() => setBahasa(b.nilai)}>
+              {b.label}
+            </button>
+          ))}
+        </div>
+        <div className="tes-daftar">
+          <span className="tes-label">Cara mulai</span>
+          {(["tahan", "tap"] as const).map((c) => (
+            <button key={c} type="button" className={c === cara ? "tes-kalimat aktif" : "tes-kalimat"} disabled={merekam || menunggu} onClick={() => setCara(c)}>
+              {c === "tahan" ? "Tahan" : "Tap mulai, tap selesai"}
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section className="tes-rekam">
         <p className="tes-sementara" aria-live="polite">
           {merekam ? sementara || "Mendengarkan…" : menunggu ? sementara || "Menunggu hasil…" : terakhir ? `Terakhir: ${terakhir.mentah || "(kosong)"}` : "Tahan tombol, bicara, lalu lepas."}
@@ -288,12 +328,27 @@ export function TesSuara() {
           type="button"
           className={merekam ? "tes-mik merekam" : "tes-mik"}
           disabled={!dukung || menunggu}
-          onPointerDown={mulai}
-          onPointerUp={lepas}
-          onPointerCancel={lepas}
+          {...(cara === "tahan"
+            ? {
+                onPointerDown: (e: React.PointerEvent<HTMLButtonElement>) => {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  mulai();
+                },
+                onPointerUp: lepas,
+                onPointerCancel: lepas,
+              }
+            : { onClick: () => (sesi.current.aktif ? lepas() : mulai()) })}
           onContextMenu={(e) => e.preventDefault()}
         >
-          {merekam ? "Lepas untuk selesai" : menunggu ? "Menunggu…" : "Tahan untuk bicara"}
+          {menunggu
+            ? "Menunggu…"
+            : cara === "tahan"
+              ? merekam
+                ? "Lepas untuk selesai"
+                : "Tahan untuk bicara"
+              : merekam
+                ? "Tap untuk selesai"
+                : "Tap untuk mulai"}
         </button>
         {terakhir?.status === "macet" && <p className="tes-gagal">Suara nggak tertangkap, coba lagi atau ketik.</p>}
       </section>
@@ -318,7 +373,7 @@ export function TesSuara() {
               <li key={p.no} className="tes-entri">
                 <div className="tes-entri-kepala">
                   <span>
-                    #{p.no} · {p.waktu} · {p.mode}
+                    #{p.no} · {p.waktu} · {p.mode} · {p.cara ?? "tahan"} · {p.bahasa === undefined ? "id-ID" : p.bahasa || "bawaan"}
                   </span>
                   <span className={p.status === "selesai" ? "tes-ok" : "tes-gagal"}>
                     {p.status}
@@ -333,6 +388,12 @@ export function TesSuara() {
                   <dd>{p.mentah || "(kosong)"}</dd>
                   <dt>Parser</dt>
                   <dd>{p.parser}</dd>
+                  {p.pesan && (
+                    <>
+                      <dt>Pesan</dt>
+                      <dd>{p.pesan}</dd>
+                    </>
+                  )}
                 </dl>
               </li>
             ))}

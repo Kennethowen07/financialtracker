@@ -1940,3 +1940,14 @@ code {
   color: var(--text);
   overflow-wrap: anywhere;
 }
+
+.tes-label {
+  align-self: center;
+  min-width: 76px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.tes-kalimat:disabled {
+  opacity: 0.5;
+}
