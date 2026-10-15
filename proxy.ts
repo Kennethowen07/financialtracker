@@ -1,12 +1,12 @@
 // Proxy (dulu "middleware"): jalan sebelum setiap request.
-// Melindungi data pribadi. Yang terbuka tanpa login: /masuk, /demo, /privasi, login Google, API demo,
+// Melindungi data pribadi. Yang terbuka tanpa login: /masuk, /demo, /privasi, /tes-suara (sementara), login Google, API demo,
 // ikon & manifest PWA. Di sini hanya dicek tanda tangan cookie (cepat, tanpa database);
 // akun yang dinonaktifkan dicek lagi di server (lib/server.ts).
 import { NextResponse, type NextRequest } from "next/server";
 import { bacaToken, NAMA_COOKIE } from "@/lib/sesi";
 
 // Dicocokkan per segmen: "/masuk" dan "/masuk/..." terbuka, tapi "/masukan" tidak.
-const PUBLIK = /^\/(masuk|demo|privasi|api\/auth|api\/demo|ikon)(\/|$)|^\/(icon|apple-icon|manifest\.webmanifest|favicon\.ico)$/;
+const PUBLIK = /^\/(masuk|demo|privasi|tes-suara|api\/auth|api\/demo|ikon)(\/|$)|^\/(icon|apple-icon|manifest\.webmanifest|favicon\.ico)$/;
 
 /**
  * Perlindungan CSRF: request yang mengubah data harus berasal dari situs ini sendiri.
