@@ -2,7 +2,7 @@
 // Halaman /tes-suara: tahan untuk bicara, lalu catat apa yang dikembalikan browser dan hasil parser-nya.
 // Tujuannya mengecek pengenal suara bawaan (Web Speech API, id-ID) di iPhone, Safari dan PWA,
 // sebelum fitur aslinya dibangun. Setiap rekaman memakai objek pengenal baru (PRD).
-// Pilihan bahasa dan cara mulai ada untuk memisahkan penyebab error (mis. service-not-allowed di iOS).
+// Pilihan bahasa, cara mulai, dan continuous ada untuk memisahkan penyebab error (mis. service-not-allowed di iOS).
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { bacaInput } from "@/lib/parser";
 
@@ -59,6 +59,8 @@ interface Percobaan {
   /** Kosong berarti bahasa bawaan HP. Tidak ada di riwayat lama. */
   bahasa?: string;
   cara?: Cara;
+  /** Riwayat lama (sebelum pilihan ini ada) selalu continuous. */
+  kontinu?: boolean;
   /** Jeda dari tombol dilepas sampai hasil akhir masuk. */
   jedaMs: number | null;
   parser: string;
@@ -130,7 +132,7 @@ function keTeks(riwayat: Percobaan[], info: string): string {
     .reverse()
     .map((p) =>
       [
-        `#${p.no} ${p.waktu} [${p.mode}, ${p.cara ?? "tahan"}, ${p.bahasa === undefined ? "id-ID" : p.bahasa || "bawaan"}] ${p.status}${p.error ? ` (${p.error})` : ""}${p.jedaMs !== null ? `, ${p.jedaMs} ms` : ""}`,
+        `#${p.no} ${p.waktu} [${p.mode}, ${p.cara ?? "tahan"}, ${p.bahasa === undefined ? "id-ID" : p.bahasa || "bawaan"}, continuous ${p.kontinu === false ? "mati" : "nyala"}] ${p.status}${p.error ? ` (${p.error})` : ""}${p.jedaMs !== null ? `, ${p.jedaMs} ms` : ""}`,
         ...(p.pesan ? [`  pesan  : ${p.pesan}`] : []),
         `  target : ${p.target ?? "-"}`,
         `  mentah : ${p.mentah || "(kosong)"}`,
@@ -152,6 +154,8 @@ export function TesSuara() {
   const [disalin, setDisalin] = useState(false);
   const [bahasa, setBahasa] = useState("id-ID");
   const [cara, setCara] = useState<Cara>("tahan");
+  // Default mati: ada laporan service-not-allowed di iOS hanya saat continuous nyala.
+  const [kontinu, setKontinu] = useState(false);
 
   const pengenal = useRef<PengenalSuara | null>(null);
   const sesi = useRef({ teks: "", aktif: false, selesai: true, dilepasPada: 0, error: "", pesan: "" });
@@ -180,6 +184,7 @@ export function TesSuara() {
       pesan: s.pesan || undefined,
       bahasa,
       cara,
+      kontinu,
       jedaMs: s.dilepasPada && status === "selesai" ? Date.now() - s.dilepasPada : null,
       parser: ringkasParser(teks),
     };
@@ -193,7 +198,7 @@ export function TesSuara() {
     const rec = new Kelas();
     if (bahasa) rec.lang = bahasa;
     rec.interimResults = true;
-    rec.continuous = true;
+    rec.continuous = kontinu;
     sesi.current = { teks: "", aktif: true, selesai: false, dilepasPada: 0, error: "", pesan: "" };
 
     rec.onresult = (ev) => {
@@ -318,6 +323,14 @@ export function TesSuara() {
             </button>
           ))}
         </div>
+        <div className="tes-daftar">
+          <span className="tes-label">Continuous</span>
+          {[false, true].map((k) => (
+            <button key={String(k)} type="button" className={k === kontinu ? "tes-kalimat aktif" : "tes-kalimat"} disabled={merekam || menunggu} onClick={() => setKontinu(k)}>
+              {k ? "Nyala" : "Mati"}
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="tes-rekam">
@@ -373,7 +386,8 @@ export function TesSuara() {
               <li key={p.no} className="tes-entri">
                 <div className="tes-entri-kepala">
                   <span>
-                    #{p.no} · {p.waktu} · {p.mode} · {p.cara ?? "tahan"} · {p.bahasa === undefined ? "id-ID" : p.bahasa || "bawaan"}
+                    #{p.no} · {p.waktu} · {p.mode} · {p.cara ?? "tahan"} · {p.bahasa === undefined ? "id-ID" : p.bahasa || "bawaan"} · continuous{" "}
+                    {p.kontinu === false ? "mati" : "nyala"}
                   </span>
                   <span className={p.status === "selesai" ? "tes-ok" : "tes-gagal"}>
                     {p.status}
