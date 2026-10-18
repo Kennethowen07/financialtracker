@@ -52,35 +52,35 @@ function daftarLangkah(suara: boolean): Langkah[] {
     suara
       ? {
           target: ".tombol-mik",
-          judul: "Catat pakai suara",
+          judul: "Catat dengan Suara",
           isi: (
             <p>
-              <b>Tahan</b>, bilang <b>&quot;kopi lima belas ribu&quot;</b>, lalu <b>lepas</b>.
+              Tekan dan tahan tombol ini, ucapkan <b>&quot;kopi lima belas ribu&quot;</b>, lalu lepaskan.
             </p>
           ),
         }
       : {
           target: ".tombol-kirim",
-          judul: "Catat pakai suara",
-          isi: <p>Browser ini belum mendukung suara. Coba di Chrome atau Safari.</p>,
+          judul: "Catat dengan Suara",
+          isi: <p>Peramban ini belum mendukung input suara. Silakan gunakan Chrome atau Safari.</p>,
         },
     {
       target: "#catat",
-      judul: "Catat dengan mengetik",
+      judul: "Catat dengan Mengetik",
       isi: (
         <p>
-          Ketik <b>rasela 25000</b>, lalu kirim.
+          Ketik <b>rasela 25000</b>, lalu tekan tombol kirim.
         </p>
       ),
     },
     {
       target: ".input-menu",
-      judul: "Catat dari screenshot",
+      judul: "Catat dari Tangkapan Layar",
       isi: (
         <>
-          <p>Upload screenshot mutasi bank atau e-wallet di sini. Perlu login Google.</p>
+          <p>Unggah tangkapan layar mutasi rekening atau dompet digital melalui tombol ini. Fitur ini memerlukan akun Google.</p>
           <p className="tur-kecil">
-            Gambar tidak disimpan. <Link href="/privasi">Privasi</Link>
+            Gambar tidak disimpan. <Link href="/privasi">Kebijakan Privasi</Link>
           </p>
           <Link href="/masuk" className="tur-google">
             Masuk dengan Google
@@ -196,7 +196,7 @@ export function PanduanDemo({ terakhir }: Props) {
         </button>
         <strong className="tur-judul">{langkahIni.judul}</strong>
         <div className="tur-isi">{langkahIni.isi}</div>
-        {sudah && <p className="tur-berhasil" role="status">Berhasil!</p>}
+        {sudah && <p className="tur-berhasil" role="status">Berhasil tercatat.</p>}
         <div className="tur-kaki">
           <span className="tur-nomor">
             <b>{langkah + 1}</b>/3
@@ -208,7 +208,7 @@ export function PanduanDemo({ terakhir }: Props) {
               </button>
             )}
             <button type="button" className="tur-lanjut" onClick={() => (terakhirKah ? tutup() : setLangkah(langkah + 1))}>
-              {terakhirKah ? "OK" : "Lanjut"}
+              {terakhirKah ? "Selesai" : "Berikutnya"}
             </button>
           </span>
         </div>
