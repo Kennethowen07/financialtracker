@@ -136,8 +136,8 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
 
   /**
    * Simpan teks (ketikan atau hasil suara). Transaksi langsung tampil dengan status memproses.
-   * Ketikan yang belum dikenal langsung ditanyakan; hasil suara tidak (dipakai sambil jalan),
-   * cukup diberi tahu jumlah yang belum dikategorikan.
+   * Yang belum dikenal memori langsung ditanyakan kategorinya, termasuk hasil suara setelah
+   * hitung mundur habis (permintaan pemilik, docs/KEPUTUSAN.md no. 35).
    */
   async function catat(isi: string, cara: "ketik" | "suara") {
     const baca = bacaInput(isi);
@@ -161,15 +161,10 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
       }
       for (const h of hasil.hasil) terapkan(h.transaksi);
       const tanya = hasil.hasil.filter((h) => h.tanya).map((h) => ({ transaksi: h.transaksi, tanyaJenis: h.tanya!.tanyaJenis }));
-      if (tanya.length && cara === "ketik") setAntrian((a) => [...a, ...tanya]);
+      if (tanya.length) setAntrian((a) => [...a, ...tanya]);
 
       const pertama = hasil.hasil[0].transaksi;
-      if (tanya.length && cara === "suara") {
-        setPesan({
-          teks: `Tersimpan. ${tanya.length} belum dikategorikan`,
-          aksi: { label: "Pilih", jalankan: () => setAntrian((a) => [...a, ...tanya]) },
-        });
-      } else if (!pertama.tanggal.startsWith(bulan)) {
+      if (!pertama.tanggal.startsWith(bulan)) {
         setPesan({ teks: `Tercatat untuk ${labelTanggal(pertama.tanggal, hariIni)}` });
       } else if (hasil.tanggalDariTeks && !tanya.length) {
         setPesan({ teks: `Dicatat untuk ${labelTanggal(pertama.tanggal, hariIni)}`, aksi: { label: "Ubah", jalankan: () => setEdit(pertama) } });
