@@ -2,8 +2,10 @@
 // - Mode pribadi: lewat API (database Turso).
 // - Mode demo (Tahap 7): disimpan di browser pengunjung.
 // Komponen tampilan hanya mengenal interface ini, jadi tampilannya sama untuk kedua mode.
+import type { Gambar } from "./ai";
 import type { Kategori } from "./kategori";
-import type { HasilCatat, HasilPratinjau, HasilRapikan, PilihanKategori, Transaksi, TransaksiManual, UbahTransaksi } from "./transaksi";
+import type { ItemPeriksa } from "./mutasi";
+import type { HasilCatat, HasilItem, HasilPratinjau, HasilRapikan, PilihanKategori, SimpanMutasi, Transaksi, TransaksiManual, UbahTransaksi } from "./transaksi";
 
 export interface Gudang {
   mode: "pribadi" | "demo";
@@ -18,7 +20,12 @@ export interface Gudang {
   edit(id: number, ubah: UbahTransaksi): Promise<Transaksi>;
   tambahManual(data: TransaksiManual): Promise<Transaksi>;
   hapus(id: number): Promise<void>;
+  /** Baca satu screenshot mutasi (1 kuota AI). Hanya mode pribadi; demo tidak punya. */
+  bacaMutasi?(gambar: Gambar): Promise<HasilBacaMutasi>;
+  simpanMutasi?(items: SimpanMutasi[]): Promise<HasilItem[]>;
 }
+
+export type HasilBacaMutasi = { ok: true; items: ItemPeriksa[] } | { ok: false; alasan: "kuota" | "tidak_tersedia" };
 
 export class GagalSimpan extends Error {}
 
@@ -65,6 +72,8 @@ export function denganSesi(gudang: Gudang, keMasuk: () => void): Gudang {
     edit: jaga(gudang.edit),
     tambahManual: jaga(gudang.tambahManual),
     hapus: jaga(gudang.hapus),
+    bacaMutasi: gudang.bacaMutasi && jaga(gudang.bacaMutasi),
+    simpanMutasi: gudang.simpanMutasi && jaga(gudang.simpanMutasi),
   };
 }
 
@@ -79,4 +88,6 @@ export const gudangServer: Gudang = {
   edit: (id, ubah) => minta(`/api/transaksi/${id}`, kirim(ubah, "PATCH")),
   tambahManual: (data) => minta("/api/transaksi", kirim(data)),
   hapus: (id) => minta(`/api/transaksi/${id}`, { method: "DELETE" }),
+  bacaMutasi: (gambar) => minta("/api/mutasi", kirim(gambar)),
+  simpanMutasi: async (items) => (await minta<{ hasil: HasilItem[] }>("/api/mutasi/simpan", kirim({ items }))).hasil,
 };

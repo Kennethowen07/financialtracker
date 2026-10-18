@@ -1,6 +1,7 @@
 // Semua pemanggilan AI lewat sini (docs/PRD.md "Peran AI"): Gemini API mode gratis.
 // Kode lain hanya mengenal interface LayananAI, jadi di test Gemini bisa diganti tiruan.
-import { ApiError, GoogleGenAI } from "@google/genai";
+import { ApiError, GoogleGenAI, type ContentListUnion } from "@google/genai";
+import { konteksMutasi, SISTEM_MUTASI, SKEMA_MUTASI } from "./mutasi";
 
 export type AlasanAiGagal = "tidak_aktif" | "timeout" | "kuota" | "error";
 
@@ -15,6 +16,14 @@ export interface LayananAI {
    */
   rapikanSuara(teks: string): Promise<HasilAI<string>>;
   buatAnalisis(ringkasan: unknown): Promise<HasilAI<string>>;
+  /** Screenshot mutasi → JSON transaksi (divalidasi oleh lib/mutasi.ts olahHasilMutasi). */
+  bacaMutasi(gambar: Gambar, hariIni: string): Promise<HasilAI<string>>;
+}
+
+/** Gambar dalam base64 (tanpa awalan data:), mis. dari input file di browser. */
+export interface Gambar {
+  data: string;
+  mimeType: string;
 }
 
 /** Batas waktu tunggu AI. Lewat dari ini, teks dikembalikan ke kotak input (PRD). */
@@ -51,7 +60,7 @@ export function buatLayananGemini(
   if (!apiKey) return AI_NONAKTIF;
   const ai = new GoogleGenAI({ apiKey });
 
-  async function panggil(system: string, isi: string, opsi: { json?: object; batasMs?: number }): Promise<HasilAI<string>> {
+  async function panggil(system: string, isi: ContentListUnion, opsi: { json?: object; batasMs?: number }): Promise<HasilAI<string>> {
     try {
       const res = await ai.models.generateContent({
         model,
@@ -86,6 +95,15 @@ export function buatLayananGemini(
       }
     },
 
+    async bacaMutasi(gambar, hariIni) {
+      // Membaca gambar lebih lama dari teks; dipicu tombol, jadi boleh menunggu.
+      return panggil(
+        SISTEM_MUTASI,
+        [{ role: "user", parts: [{ inlineData: { mimeType: gambar.mimeType, data: gambar.data } }, { text: konteksMutasi(hariIni) }] }],
+        { json: SKEMA_MUTASI, batasMs: 45_000 },
+      );
+    },
+
     async buatAnalisis(ringkasan) {
       // Analisis boleh lebih lama karena dipicu tombol, bukan saat mencatat.
       return panggil(SISTEM_ANALISIS, JSON.stringify(ringkasan), { batasMs: 30_000 });
@@ -98,6 +116,7 @@ export const AI_NONAKTIF: LayananAI = {
   aktif: false,
   rapikanSuara: async () => ({ ok: false, alasan: "tidak_aktif" }),
   buatAnalisis: async () => ({ ok: false, alasan: "tidak_aktif" }),
+  bacaMutasi: async () => ({ ok: false, alasan: "tidak_aktif" }),
 };
 
 /**
@@ -110,5 +129,6 @@ export function denganKuota(ai: LayananAI, pakai: () => Promise<boolean>): Layan
     aktif: true,
     rapikanSuara: async (teks) => ((await pakai()) ? ai.rapikanSuara(teks) : { ok: false, alasan: "kuota" }),
     buatAnalisis: async (ringkasan) => ((await pakai()) ? ai.buatAnalisis(ringkasan) : { ok: false, alasan: "kuota" }),
+    bacaMutasi: async (gambar, hariIni) => ((await pakai()) ? ai.bacaMutasi(gambar, hariIni) : { ok: false, alasan: "kuota" }),
   };
 }

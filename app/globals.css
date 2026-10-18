@@ -1918,3 +1918,122 @@ code {
     max-width: 520px;
   }
 }
+
+/* ================= upload mutasi ================= */
+
+.menu-input {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.menu-pilihan {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.menu-pilihan svg {
+  color: var(--accent-light);
+  flex-shrink: 0;
+}
+
+.menu-pilihan small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.mutasi-membaca {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 0;
+  color: var(--accent-light);
+  font-weight: 600;
+}
+
+.mutasi-membaca small {
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.berputar {
+  animation: putar 1s linear infinite;
+}
+
+@keyframes putar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mutasi-sub {
+  margin-top: -10px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.mutasi-daftar {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.mutasi-baris {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.mutasi-baris input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+
+.mutasi-baris.redup .mutasi-keterangan,
+.mutasi-baris.redup .trx-nominal {
+  color: var(--text-2);
+}
+
+.mutasi-isi {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mutasi-keterangan {
+  font-size: 14.5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.mutasi-detail {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.mutasi-peringatan {
+  font-size: 12px;
+  color: var(--warn);
+}

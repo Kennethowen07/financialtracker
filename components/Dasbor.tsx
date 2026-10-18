@@ -12,11 +12,12 @@ import { bacaInput, type AlasanGagalBaca } from "@/lib/parser";
 import { bulanSebelumnya } from "@/lib/tanggal";
 import { labelTanggal } from "@/lib/format";
 import { usePengenalSuara, type GagalSuara } from "@/lib/suara";
-import type { PilihanKategori, Transaksi, TransaksiManual } from "@/lib/transaksi";
+import type { HasilItem, PilihanKategori, Transaksi, TransaksiManual } from "@/lib/transaksi";
 import { DaftarPerHari, GrafikMinggu, KartuRingkasan, PemilihBulan, PerKategori, TabelTransaksi, type ItemSementara } from "./Bagian";
 import { FormTransaksi, PanelTanya } from "./Lembar";
 import { Ikon } from "./Ikon";
 import { KartuSuara, TombolMikrofon, type KeadaanKartu } from "./InputSuara";
+import { LembarMutasi, MenuInput } from "./UploadMutasi";
 import { Kerangka } from "./Kerangka";
 
 export interface DataAwal {
@@ -75,6 +76,8 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
   const [antrian, setAntrian] = useState<{ transaksi: Transaksi; tanyaJenis: boolean }[]>([]);
   const [edit, setEdit] = useState<Transaksi | "baru" | null>(null);
   const [kartu, setKartu] = useState<KeadaanKartu | null>(null);
+  const [menu, setMenu] = useState(false);
+  const [berkasMutasi, setBerkasMutasi] = useState<File[] | null>(null);
   const [teks, setTeks] = useState("");
   const [pesan, setPesan] = useState<Pesan | null>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -229,6 +232,18 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
   const kartuTampil: KeadaanKartu | null =
     suara.status === "merekam" ? { tahap: "merekam", sementara: suara.sementara } : kartu;
 
+  // ---------- screenshot mutasi (hanya mode pribadi) ----------
+
+  const bisaMutasi = Boolean(gudang.bacaMutasi);
+
+  function selesaiMutasi(hasil: HasilItem[]) {
+    setBerkasMutasi(null);
+    for (const h of hasil) terapkan(h.transaksi);
+    const tanya = hasil.filter((h) => h.tanya).map((h) => ({ transaksi: h.transaksi, tanyaJenis: h.tanya!.tanyaJenis }));
+    if (tanya.length) setAntrian((a) => [...a, ...tanya]);
+    setPesan({ teks: `${hasil.length} transaksi dari mutasi tersimpan` });
+  }
+
   function pilihTransaksi(t: Transaksi) {
     if (t.perluTanya) setAntrian((a) => [{ transaksi: t, tanyaJenis: true }, ...a.filter((x) => x.transaksi.id !== t.id)]);
     else setEdit(t);
@@ -303,7 +318,12 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
               }}
             />
           )}
-          <button type="button" className="tombol-bulat input-menu" aria-label="Buka form manual" onClick={() => setEdit("baru")}>
+          <button
+            type="button"
+            className="tombol-bulat input-menu"
+            aria-label={bisaMutasi ? "Tambah transaksi: upload mutasi atau form manual" : "Buka form manual"}
+            onClick={() => (bisaMutasi ? setMenu(true) : setEdit("baru"))}
+          >
             <Ikon nama="menu" ukuran={20} />
           </button>
           <label className="sr-only" htmlFor="catat">Catat transaksi</label>
@@ -399,6 +419,22 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
           onJawab={jawab}
           onTutup={tutupTanya}
         />
+      )}
+      {!tanyaSekarang && !edit && menu && (
+        <MenuInput
+          onMutasi={(berkas) => {
+            setMenu(false);
+            setBerkasMutasi(berkas);
+          }}
+          onManual={() => {
+            setMenu(false);
+            setEdit("baru");
+          }}
+          onTutup={() => setMenu(false)}
+        />
+      )}
+      {!tanyaSekarang && !edit && berkasMutasi && (
+        <LembarMutasi berkas={berkasMutasi} gudang={gudang} onSelesai={selesaiMutasi} onTutup={() => setBerkasMutasi(null)} />
       )}
       {!tanyaSekarang && edit && (
         <FormTransaksi

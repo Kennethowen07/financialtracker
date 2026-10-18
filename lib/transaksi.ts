@@ -7,6 +7,7 @@ import type { Client } from "@libsql/client";
 import type { LayananAI } from "./ai";
 import { daftarKategori, KesalahanInput, tentukanKategori } from "./kategori";
 import { cariMemori, simpanMemori, tandaiDipakai, type EntriMemori } from "./memori";
+import type { BarisMutasi, ItemPeriksa } from "./mutasi";
 import { bacaInput, SEMUA_JENIS, type AlasanGagalBaca, type ItemTerbaca, type Jenis } from "./parser";
 import { hariIni } from "./tanggal";
 
@@ -238,6 +239,75 @@ export async function rapikanSuara(ai: LayananAI, teks: string): Promise<HasilRa
   const hasil = await ai.rapikanSuara(isi);
   if (!hasil.ok) return { ok: false, alasan: hasil.alasan === "kuota" ? "kuota" : "tidak_tersedia" };
   return hasil.data && bacaInput(hasil.data).ok ? { ok: true, teks: hasil.data } : { ok: false, alasan: "tanpa_nominal" };
+}
+
+// ---------- screenshot mutasi ----------
+
+/**
+ * Jenis + kategori untuk satu baris mutasi. Uang masuk selalu pemasukan; memori yang
+ * bertentangan dengan arah uang di mutasi (mis. memori "gaji" tapi uangnya keluar) diabaikan.
+ */
+function aturMutasi(keterangan: string, nominal: number, arah: Arah, m: EntriMemori | null) {
+  const a = aturItem({ deskripsi: keterangan, nominal, jenisPasti: arah === "masuk" ? "pemasukan" : null }, m);
+  if (arah === "keluar" && a.jenis === "pemasukan") return { jenis: "pengeluaran" as Jenis, kategoriId: null, dariMemori: false };
+  return a;
+}
+
+/** Hasil baca screenshot → baris layar periksa (kategori dari memori, sudah tercatat atau belum). */
+export async function periksaMutasi(deps: Deps, baris: BarisMutasi[]): Promise<ItemPeriksa[]> {
+  const { db, penggunaId } = deps;
+  const kategori = await daftarKategori(db, penggunaId);
+  return Promise.all(
+    baris.map(async (b) => {
+      const a = aturMutasi(b.keterangan, b.nominal, b.arah, await cariMemori(db, penggunaId, b.keterangan));
+      const k = kategori.find((x) => x.id === a.kategoriId);
+      const { rows } = await db.execute({
+        sql: "SELECT 1 FROM transaksi WHERE pengguna_id = ? AND tanggal = ? AND nominal = ? AND arah = ? LIMIT 1",
+        args: [penggunaId, b.tanggal, b.nominal, b.arah],
+      });
+      return { ...b, jenis: a.jenis, kategori: k ? { id: k.id, nama: k.nama, ikon: k.ikon } : null, tercatat: rows.length > 0 };
+    }),
+  );
+}
+
+export interface SimpanMutasi {
+  tanggal: string;
+  nominal: number;
+  keterangan: string;
+  arah: Arah;
+  sumber: string;
+}
+
+/**
+ * Simpan baris mutasi yang dicentang. Semua isian divalidasi ulang di server.
+ * cara_input "import" (mutasi = impor dari aplikasi lain, KEPUTUSAN 43); nama aplikasinya di teks_asli.
+ */
+export async function catatMutasi(deps: Deps, items: SimpanMutasi[]): Promise<HasilItem[]> {
+  const sekarang = deps.sekarang?.() ?? new Date();
+  const { db, penggunaId } = deps;
+  if (!Array.isArray(items) || items.length === 0 || items.length > 100) throw new KesalahanInput("Pilih 1 sampai 100 transaksi");
+  const bersih = items.map((it) => ({
+    tanggal: cekTanggal(it?.tanggal, sekarang),
+    nominal: cekNominal(it?.nominal),
+    keterangan: cekDeskripsi(it?.keterangan),
+    arah: (it?.arah === "masuk" ? "masuk" : "keluar") as Arah,
+    sumber: typeof it?.sumber === "string" ? it.sumber.trim().slice(0, 30) : "",
+  }));
+
+  const hasil: HasilItem[] = [];
+  for (const it of bersih) {
+    const m = await cariMemori(db, penggunaId, it.keterangan);
+    const a = aturMutasi(it.keterangan, it.nominal, it.arah, m);
+    if (a.dariMemori) await tandaiDipakai(db, m!.id, sekarang);
+    const trx = await sisipkan(db, penggunaId, {
+      tanggal: it.tanggal, nominal: it.nominal, deskripsi: it.keterangan,
+      teksAsli: `mutasi ${it.sumber || "?"}: ${it.keterangan}`, caraInput: "import",
+      jenis: a.jenis, arah: a.jenis === "investasi" ? it.arah : arahUntuk(a.jenis, it.keterangan),
+      kategoriId: a.kategoriId, sumber: a.dariMemori ? "memori" : "tanya_balik",
+    }, sekarang);
+    hasil.push({ transaksi: trx, tanya: a.dariMemori ? null : { tanyaJenis: it.arah === "keluar" } });
+  }
+  return hasil;
 }
 
 // ---------- tanya balik, edit, manual, hapus ----------

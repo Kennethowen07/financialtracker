@@ -8,7 +8,7 @@ export default function Halaman() {
   return (
     <main className="halaman-teks">
       <h1>Kebijakan Privasi</h1>
-      <p className="halaman-teks-sub">Berlaku sejak 15 Oktober 2026, diperbarui 18 Oktober 2026 (input suara).</p>
+      <p className="halaman-teks-sub">Berlaku sejak 15 Oktober 2026, diperbarui 18 Oktober 2026 (input suara dan screenshot mutasi).</p>
 
       <p>
         Financial Detector adalah aplikasi pencatat pengeluaran pribadi. Halaman ini menjelaskan data apa yang
@@ -42,10 +42,10 @@ export default function Halaman() {
         <li><b>Google Sign-In</b> untuk login.</li>
         <li><b>Vercel</b> (server aplikasi) dan <b>Turso</b> (database) untuk menyimpan data.</li>
         <li>
-          <b>Google Gemini</b> (AI), hanya di dua tempat: ringkasan bulanan saat kamu menekan Perbarui di halaman
-          Analisis AI, dan teks hasil input suara yang nominalnya tidak terbaca (misalnya &quot;rasela dua lima&quot;).
-          Kategori transaksi tidak ditebak AI, melainkan diambil dari catatanmu sendiri. Nama dan email tidak ikut
-          dikirim. Aplikasi memakai Gemini versi gratis, di mana Google dapat memakai input tersebut untuk
+          <b>Google Gemini</b> (AI), hanya di tiga tempat: ringkasan bulanan saat kamu menekan Perbarui di halaman
+          Analisis AI, teks hasil input suara yang nominalnya tidak terbaca (misalnya &quot;rasela dua lima&quot;), dan
+          screenshot mutasi yang kamu upload. Kategori transaksi tidak ditebak AI, melainkan diambil dari catatanmu
+          sendiri. Aplikasi memakai Gemini versi gratis, di mana Google dapat memakai input tersebut untuk
           mengembangkan produknya.
         </li>
       </ul>
@@ -55,6 +55,14 @@ export default function Halaman() {
         Suara diubah menjadi teks oleh fitur pengenal suara bawaan browser atau HP-mu (di iPhone oleh layanan
         Apple, di Chrome oleh Google). Aplikasi ini hanya menerima teksnya. Rekaman suara tidak disimpan dan tidak
         pernah dikirim ke server aplikasi ini maupun ke layanan AI.
+      </p>
+
+      <h2>Screenshot mutasi</h2>
+      <p>
+        Screenshot riwayat transaksi yang kamu upload dikirim apa adanya ke Google Gemini untuk dibaca, termasuk
+        semua yang terlihat di gambar seperti nama, nomor rekening, dan saldo. Gambar tidak disimpan di server
+        aplikasi ini. Yang disimpan hanya transaksi yang kamu centang dan simpan di layar periksa. Kalau tidak ingin
+        data itu ikut terkirim, potong dulu screenshot-nya sebelum diupload.
       </p>
 
       <h2>Mode demo</h2>

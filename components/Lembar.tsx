@@ -19,7 +19,7 @@ const PILIHAN_JENIS: { jenis: Jenis; label: string }[] = [
 
 // ---------- wadah ----------
 
-function LembarBawah({ judul, onTutup, children }: { judul: string; onTutup: () => void; children: ReactNode }) {
+export function LembarBawah({ judul, onTutup, children }: { judul: string; onTutup: () => void; children: ReactNode }) {
   useEffect(() => {
     const esc = (e: KeyboardEvent) => e.key === "Escape" && onTutup();
     document.addEventListener("keydown", esc);

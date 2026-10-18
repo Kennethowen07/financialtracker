@@ -5,8 +5,10 @@ import { buatDbUji, buatPenggunaUji, idKategori } from "./db-uji";
 import { tentukanKategori } from "./kategori";
 import { cariMemori, simpanMemori } from "./memori";
 import {
-  catatTeks, daftarTransaksi, editTransaksi, hapusTransaksi, jawabTanya, rapikanSuara, tambahManual, type Deps,
+  catatMutasi, catatTeks, daftarTransaksi, editTransaksi, hapusTransaksi, jawabTanya, periksaMutasi, rapikanSuara, tambahManual,
+  type Deps,
 } from "./transaksi";
+import type { BarisMutasi } from "./mutasi";
 
 // 15 Oktober 2026, 12.00 WIB
 const SEKARANG = () => new Date("2026-10-15T05:00:00Z");
@@ -22,6 +24,7 @@ function aiTiruan(jawab: (teks: string) => HasilAI<string> = () => ({ ok: false,
       return jawab(teks);
     },
     buatAnalisis: async () => ({ ok: true, data: "analisis" }),
+    bacaMutasi: async () => ({ ok: false, alasan: "error" }),
   };
 }
 
@@ -267,5 +270,73 @@ describe("pemisahan data antar akun", () => {
     const trxB2 = harusOk(await catatTeks(b, "bakso 20000")).hasil[0].transaksi;
     const dijawab = await jawabTanya(b, trxB2.id, { jenis: "pengeluaran", kategoriBaru: "makanan & minuman" });
     expect(dijawab.kategori?.id).toBe(await idKategori(db, "Makanan & Minuman"));
+  });
+});
+
+describe("screenshot mutasi", () => {
+  const mutasi = (lain: Partial<BarisMutasi> = {}): BarisMutasi => ({
+    tanggal: "2026-10-14", keterangan: "Indomaret", nominal: 13900, arah: "keluar", golongan: "belanja",
+    sumber: "BCA", terpotong: false, pending: false, ...lain,
+  });
+
+  test("periksa: kategori dari memori, uang masuk jadi pemasukan, yang sudah tercatat ditandai", async () => {
+    const deps = await siapkan();
+    const belanja = await idKategori(deps.db, "Belanja");
+    await simpanMemori(deps.db, deps.penggunaId, { deskripsi: "indomaret", jenis: "pengeluaran", kategoriId: belanja, asal: "manual" });
+    await catatTeks(deps, "tanggal 14 koka ramen 36000");
+
+    const hasil = await periksaMutasi(deps, [
+      mutasi(),
+      mutasi({ keterangan: "Koka Ramen", nominal: 36000 }),
+      mutasi({ keterangan: "Refund Shopee", nominal: 20000, arah: "masuk" }),
+    ]);
+    expect(hasil.map((h) => [h.keterangan, h.jenis, h.kategori?.nama ?? null, h.tercatat])).toEqual([
+      ["Indomaret", "pengeluaran", "Belanja", false],
+      ["Koka Ramen", "pengeluaran", null, true],
+      ["Refund Shopee", "pemasukan", null, false],
+    ]);
+  });
+
+  test("memori pemasukan diabaikan kalau uangnya keluar", async () => {
+    const deps = await siapkan();
+    await simpanMemori(deps.db, deps.penggunaId, { deskripsi: "gaji", jenis: "pemasukan", kategoriId: await idKategori(deps.db, "Gaji"), asal: "manual" });
+    const [h] = await periksaMutasi(deps, [mutasi({ keterangan: "Gaji", nominal: 1500000 })]);
+    expect(h).toMatchObject({ jenis: "pengeluaran", kategori: null });
+  });
+
+  test("simpan: cara_input import, kategori dari memori, yang belum dikenal ditanyakan", async () => {
+    const deps = await siapkan();
+    const belanja = await idKategori(deps.db, "Belanja");
+    await simpanMemori(deps.db, deps.penggunaId, { deskripsi: "indomaret", jenis: "pengeluaran", kategoriId: belanja, asal: "manual" });
+
+    const hasil = await catatMutasi(deps, [
+      { tanggal: "2026-10-14", nominal: 13900, keterangan: "Indomaret", arah: "keluar", sumber: "BCA" },
+      { tanggal: "2026-10-13", nominal: 53500, keterangan: "GrabFood", arah: "keluar", sumber: "Grab" },
+    ]);
+    expect(hasil.map((h) => [h.transaksi.deskripsi, h.transaksi.caraInput, h.transaksi.kategori?.nama ?? null, h.tanya])).toEqual([
+      ["Indomaret", "import", "Belanja", null],
+      ["GrabFood", "import", null, { tanyaJenis: true }],
+    ]);
+    const { rows } = await deps.db.execute("SELECT teks_asli FROM transaksi ORDER BY id");
+    expect(rows.map((r) => r.teks_asli)).toEqual(["mutasi BCA: Indomaret", "mutasi Grab: GrabFood"]);
+  });
+
+  test("simpan: isian divalidasi ulang di server", async () => {
+    const deps = await siapkan();
+    const sah = { tanggal: "2026-10-14", nominal: 13900, keterangan: "Indomaret", arah: "keluar" as const, sumber: "BCA" };
+    await expect(catatMutasi(deps, [])).rejects.toThrow("1 sampai 100");
+    await expect(catatMutasi(deps, [{ ...sah, tanggal: "2026-10-20" }])).rejects.toThrow("masa depan");
+    await expect(catatMutasi(deps, [{ ...sah, nominal: -1 }])).rejects.toThrow("Nominal");
+    await expect(catatMutasi(deps, [{ ...sah, keterangan: "" }])).rejects.toThrow("Deskripsi");
+    expect(await daftarTransaksi(deps.db, deps.penggunaId, "2026-10")).toHaveLength(0);
+  });
+
+  test("tercatat hanya melihat transaksi akun sendiri", async () => {
+    const db = await buatDbUji();
+    const a: Deps = { db, ai: AI_NONAKTIF, penggunaId: await buatPenggunaUji(db, "andi@uji.id"), sekarang: SEKARANG };
+    const b: Deps = { db, ai: AI_NONAKTIF, penggunaId: await buatPenggunaUji(db, "budi@uji.id"), sekarang: SEKARANG };
+    await catatMutasi(a, [{ tanggal: "2026-10-14", nominal: 13900, keterangan: "Indomaret", arah: "keluar", sumber: "BCA" }]);
+    expect((await periksaMutasi(b, [mutasi()]))[0].tercatat).toBe(false);
+    expect((await periksaMutasi(a, [mutasi()]))[0].tercatat).toBe(true);
   });
 });

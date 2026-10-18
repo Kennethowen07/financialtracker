@@ -12,6 +12,7 @@ function aiAnalisis(isi = "Pengeluaran naik.") {
   const ai: LayananAI = {
     aktif: true,
     rapikanSuara: async () => ({ ok: false, alasan: "error" }),
+    bacaMutasi: async () => ({ ok: false, alasan: "error" }),
     buatAnalisis: async (data) => {
       terkirim.push(data);
       return { ok: true, data: isi };

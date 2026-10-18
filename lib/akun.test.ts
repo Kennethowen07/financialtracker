@@ -128,6 +128,7 @@ describe("kuota AI per akun", () => {
         return { ok: true, data: "rasela 25000" };
       },
       buatAnalisis: async () => ({ ok: true, data: "x" }),
+      bacaMutasi: async () => ({ ok: false, alasan: "error" }),
     };
     let sisa = 1;
     const terbatas = denganKuota(ai, async () => sisa-- > 0);

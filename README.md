@@ -50,6 +50,7 @@ Halaman:
 | `npm run lint` | Cek ESLint |
 | `npm run build` | Build production |
 | `npm run db:setup` | Buat tabel & kategori (aman diulang) |
+| `npm run mutasi:coba` | Uji baca screenshot mutasi di `data/mutasi/` lewat Gemini (tidak menyimpan apa pun) |
 | `npm run db:backup` | Backup database (Turso / local.db) ke `backup/*.sql` |
 | `npm run import:siapkan` | Import langkah 1: spreadsheet lama → `data/import/deskripsi.csv` untuk dicek |
 | `npm run import:jalankan` | Import langkah 2: CSV yang sudah dikoreksi → database |
