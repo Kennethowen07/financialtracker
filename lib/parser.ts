@@ -1,6 +1,7 @@
 // Membaca teks bebas tanpa AI: tanggal, nominal, dan pemecahan per nominal.
 // Aturan: docs/PRD.md bagian "Aturan membaca input" + docs/KEPUTUSAN.md no. 1–2.
 // Diturunkan dari legacy/src/parser.js (toAmount).
+import { ubahAngkaKata } from "./angka-kata";
 import { bacaTanggal } from "./tanggal";
 
 export type Jenis = "pengeluaran" | "pemasukan" | "investasi" | "usaha";
@@ -53,7 +54,8 @@ function rapikanDeskripsi(s: string): string {
 export function bacaInput(teks: string, sekarang: Date = new Date()): HasilBaca {
   if (!teks.trim()) return { ok: false, alasan: "kosong" };
 
-  const t = bacaTanggal(teks, sekarang);
+  // "dua puluh lima ribu" / "goceng" → angka dulu (penting untuk input suara).
+  const t = bacaTanggal(ubahAngkaKata(teks), sekarang);
   if (!t.ok) return { ok: false, alasan: t.alasan };
 
   const nominal: { mulai: number; akhir: number; nilai: number; plus: boolean }[] = [];
