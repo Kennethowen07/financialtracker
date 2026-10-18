@@ -1,18 +1,18 @@
-// Alur mencatat transaksi (docs/PRD.md "Alur pengguna"):
-//   teks → parser (nominal, tanggal, pecah per nominal)
-//        → memori (persis / tahan typo)            → tersimpan, sumber "memori"
-//        → kalau tidak ketemu: Gemini
-//             yakin                                 → tersimpan, sumber "ai" (+ masuk memori)
-//             ragu / gagal / lambat / kuota habis   → tersimpan TANPA kategori, perlu tanya balik
+// Alur mencatat transaksi (docs/PRD.md versi 3 "Alur pengguna"):
+//   teks → parser (nominal dalam angka/kata, tanggal, pecah per nominal)
+//        → memori (persis / tahan typo)  → tersimpan, sumber "memori"
+//        → tidak ketemu                  → tersimpan TANPA kategori, perlu tanya balik
+// AI tidak lagi dipakai untuk kategori (versi 3). Sumber "ai" hanya ada di data lama.
 import type { Client } from "@libsql/client";
-import type { LayananAI, TebakanKategori } from "./ai";
+import type { LayananAI } from "./ai";
 import { daftarKategori, KesalahanInput, tentukanKategori } from "./kategori";
-import { cariMemori, contohMirip, simpanMemori, tandaiDipakai } from "./memori";
-import { bacaInput, SEMUA_JENIS, type AlasanGagalBaca, type Jenis } from "./parser";
+import { cariMemori, simpanMemori, tandaiDipakai, type EntriMemori } from "./memori";
+import { bacaInput, SEMUA_JENIS, type AlasanGagalBaca, type ItemTerbaca, type Jenis } from "./parser";
 import { hariIni } from "./tanggal";
 
 export type Sumber = "memori" | "ai" | "tanya_balik" | "manual" | "import";
 export type Arah = "keluar" | "masuk";
+export type CaraInput = "ketik" | "suara" | "form" | "import";
 
 export interface Transaksi {
   id: number;
@@ -23,6 +23,7 @@ export interface Transaksi {
   kategori: { id: number; nama: string; ikon: string } | null;
   deskripsi: string;
   sumber: Sumber;
+  caraInput: CaraInput;
   dikoreksi: boolean;
   /** Kategori belum ditentukan → tampilkan tanya balik. */
   perluTanya: boolean;
@@ -31,6 +32,7 @@ export interface Transaksi {
 
 export interface Deps {
   db: Client;
+  /** Hanya untuk Analisis AI dan cadangan input suara. */
   ai: LayananAI;
   /** Akun yang sedang memakai aplikasi. Semua data dibaca/ditulis atas nama akun ini saja. */
   penggunaId: number;
@@ -44,7 +46,7 @@ export interface HasilItem {
 }
 
 export type HasilCatat =
-  | { ok: true; tanggalDariTeks: boolean; aiTersedia: boolean; hasil: HasilItem[] }
+  | { ok: true; tanggalDariTeks: boolean; hasil: HasilItem[] }
   | { ok: false; alasan: AlasanGagalBaca };
 
 // ---------- bantuan ----------
@@ -86,7 +88,7 @@ function cekTanggal(t: unknown, sekarang: Date): string {
 }
 
 const SELECT_TRANSAKSI = `
-  SELECT t.id, t.tanggal, t.nominal, t.jenis, t.arah, t.deskripsi, t.sumber, t.dikoreksi, t.dibuat_pada,
+  SELECT t.id, t.tanggal, t.nominal, t.jenis, t.arah, t.deskripsi, t.sumber, t.cara_input, t.dikoreksi, t.dibuat_pada,
          k.id AS k_id, k.nama AS k_nama, k.ikon AS k_ikon
   FROM transaksi t LEFT JOIN kategori k ON k.id = t.kategori_id`;
 
@@ -101,6 +103,7 @@ function keTransaksi(r: Record<string, unknown>): Transaksi {
     kategori: r.k_id == null ? null : { id: Number(r.k_id), nama: String(r.k_nama), ikon: String(r.k_ikon) },
     deskripsi: String(r.deskripsi),
     sumber: r.sumber as Sumber,
+    caraInput: (r.cara_input ?? "ketik") as CaraInput,
     dikoreksi: Number(r.dikoreksi) === 1,
     perluTanya: r.k_id == null && jenis !== "usaha",
     dibuatPada: String(r.dibuat_pada),
@@ -128,110 +131,113 @@ export async function daftarTransaksi(db: Client, penggunaId: number, bulan: str
 async function sisipkan(
   db: Client,
   penggunaId: number,
-  data: { tanggal: string; nominal: number; jenis: Jenis; arah: Arah; kategoriId: number | null; deskripsi: string; teksAsli: string; sumber: Sumber },
+  data: {
+    tanggal: string; nominal: number; jenis: Jenis; arah: Arah; kategoriId: number | null;
+    deskripsi: string; teksAsli: string; sumber: Sumber; caraInput: CaraInput;
+  },
   waktu: Date,
 ): Promise<Transaksi> {
   const res = await db.execute({
-    sql: `INSERT INTO transaksi (pengguna_id, tanggal, nominal, jenis, arah, kategori_id, deskripsi, teks_asli, sumber, dibuat_pada)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    sql: `INSERT INTO transaksi (pengguna_id, tanggal, nominal, jenis, arah, kategori_id, deskripsi, teks_asli, sumber, cara_input, dibuat_pada)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [penggunaId, data.tanggal, data.nominal, data.jenis, data.arah, data.jenis === "usaha" ? null : data.kategoriId,
-      data.deskripsi, data.teksAsli, data.sumber, waktu.toISOString()],
+      data.deskripsi, data.teksAsli, data.sumber, data.caraInput, waktu.toISOString()],
   });
   return (await ambilTransaksi(db, penggunaId, Number(res.lastInsertRowid)))!;
 }
 
 // ---------- mencatat dari teks ----------
 
-/** Validasi tebakan AI terhadap daftar kategori. Kategori di luar daftar = ragu (PRD). */
-export function nilaiTebakan(
-  tebakan: TebakanKategori,
-  kategori: { id: number; nama: string; jenis: string }[],
-  jenisPasti: Jenis | null,
-): { jenis: Jenis; kategoriId: number | null; arah: Arah; yakin: boolean; tanyaJenis: boolean } {
-  const jenisValid = SEMUA_JENIS.includes(tebakan.jenis);
-  const jenis = jenisPasti ?? (jenisValid ? tebakan.jenis : "pengeluaran");
-  const yakinJenis = jenisPasti ? true : tebakan.yakinJenis && jenisValid;
-
-  if (jenis === "usaha") {
-    return { jenis, kategoriId: null, arah: "keluar", yakin: yakinJenis, tanyaJenis: !yakinJenis };
-  }
-  const nama = (tebakan.kategori ?? "").toLowerCase();
-  const cocok = kategori.find((k) => k.jenis === jenis && k.nama.toLowerCase() === nama);
-  const yakin = yakinJenis && tebakan.yakinKategori && Boolean(cocok);
-  return { jenis, kategoriId: cocok?.id ?? null, arah: tebakan.arah, yakin, tanyaJenis: !yakinJenis };
+/**
+ * Aturan memori untuk satu item: dipakai saat menyimpan (catatTeks) dan saat pratinjau
+ * input suara, supaya kartu pratinjau selalu sama dengan yang nanti tersimpan.
+ */
+export function aturItem(item: ItemTerbaca, m: EntriMemori | null): { jenis: Jenis; kategoriId: number | null; dariMemori: boolean } {
+  // Memori dipakai kalau tidak bertentangan dengan tanda +.
+  if (m && (!item.jenisPasti || item.jenisPasti === m.jenis)) return { jenis: m.jenis, kategoriId: m.kategoriId, dariMemori: true };
+  return { jenis: item.jenisPasti ?? "pengeluaran", kategoriId: null, dariMemori: false };
 }
 
-export async function catatTeks(deps: Deps, teks: string): Promise<HasilCatat> {
+export interface ItemPratinjau {
+  deskripsi: string;
+  nominal: number;
+  jenis: Jenis;
+  kategori: Transaksi["kategori"];
+  perluTanya: boolean;
+}
+
+export type HasilPratinjau =
+  | { ok: true; tanggal: string; items: ItemPratinjau[] }
+  | { ok: false; alasan: AlasanGagalBaca };
+
+/** Apa yang AKAN tersimpan dari teks ini (kartu hasil input suara). Tidak menulis apa pun. */
+export async function pratinjauTeks(deps: Deps, teks: string): Promise<HasilPratinjau> {
+  const baca = bacaInput(teks, deps.sekarang?.() ?? new Date());
+  if (!baca.ok) return baca;
+  const { db, penggunaId } = deps;
+  const [kategori, cocok] = await Promise.all([
+    daftarKategori(db, penggunaId),
+    Promise.all(baca.items.map((item) => cariMemori(db, penggunaId, item.deskripsi))),
+  ]);
+  return {
+    ok: true,
+    tanggal: baca.tanggal,
+    items: baca.items.map((item, i) => {
+      const a = aturItem(item, cocok[i]);
+      const k = kategori.find((x) => x.id === a.kategoriId);
+      return {
+        deskripsi: item.deskripsi, nominal: item.nominal, jenis: a.jenis,
+        kategori: k ? { id: k.id, nama: k.nama, ikon: k.ikon } : null,
+        perluTanya: a.jenis !== "usaha" && !k,
+      };
+    }),
+  };
+}
+
+/**
+ * Catat dari teks ketikan atau hasil pengenal suara.
+ * Input suara memakai alur yang sama; bedanya hanya dicatat sebagai cara_input "suara",
+ * dan tampilan tidak langsung memunculkan panel tanya balik (dirapikan belakangan).
+ */
+export async function catatTeks(deps: Deps, teks: string, cara: "ketik" | "suara" = "ketik"): Promise<HasilCatat> {
   const sekarang = deps.sekarang?.() ?? new Date();
   const baca = bacaInput(teks, sekarang);
   if (!baca.ok) return baca;
 
-  const { db, ai, penggunaId } = deps;
-  const kategori = await daftarKategori(db, penggunaId);
-  let aiTersedia = ai.aktif;
-
-  // Langkah 1: cek memori untuk tiap item.
+  const { db, penggunaId } = deps;
   const cekMemori = await Promise.all(baca.items.map((item) => cariMemori(db, penggunaId, item.deskripsi)));
 
-  // Langkah 2: item yang tidak ketemu (atau jenisnya bertentangan dengan tanda +) ditanya ke AI, paralel.
-  const tebakan = await Promise.all(
-    baca.items.map(async (item, i) => {
-      const m = cekMemori[i];
-      if (m && (!item.jenisPasti || item.jenisPasti === m.jenis)) return null;
-      if (!ai.aktif) return { ok: false as const, alasan: "tidak_aktif" as const };
-      return ai.tebakKategori({
-        deskripsi: item.deskripsi,
-        kategori: kategori.map((k) => ({ nama: k.nama, jenis: k.jenis })),
-        contoh: await contohMirip(db, penggunaId, item.deskripsi),
-      });
-    }),
-  );
-
-  // Langkah 3: simpan semuanya (berurutan supaya id urut sesuai kalimat).
+  // Disimpan berurutan supaya id urut sesuai kalimat.
   const hasil: HasilItem[] = [];
   for (const [i, item] of baca.items.entries()) {
     const m = cekMemori[i];
-    const t = tebakan[i];
-    const dasar = { tanggal: baca.tanggal, nominal: item.nominal, deskripsi: item.deskripsi, teksAsli: teks.trim() };
-
-    if (!t && m) {
-      await tandaiDipakai(db, m.id, sekarang);
-      const trx = await sisipkan(db, penggunaId, {
-        ...dasar, jenis: m.jenis, arah: arahUntuk(m.jenis, item.deskripsi), kategoriId: m.kategoriId, sumber: "memori",
-      }, sekarang);
-      hasil.push({ transaksi: trx, tanya: null });
-      continue;
-    }
-
-    if (t?.ok) {
-      const n = nilaiTebakan(t.data, kategori, item.jenisPasti);
-      const arah = arahUntuk(n.jenis, item.deskripsi, n.arah);
-      if (n.yakin) {
-        const trx = await sisipkan(db, penggunaId, { ...dasar, jenis: n.jenis, arah, kategoriId: n.kategoriId, sumber: "ai" }, sekarang);
-        // Disimpan ke memori supaya input yang sama berikutnya tidak memanggil AI lagi.
-        await simpanMemori(db, penggunaId, { deskripsi: item.deskripsi, jenis: n.jenis, kategoriId: n.kategoriId, asal: "ai" }, sekarang);
-        hasil.push({ transaksi: trx, tanya: null });
-      } else {
-        // Ragu: simpan dengan jenis tebakan (atau default) tapi tanpa kategori.
-        const jenis = n.tanyaJenis ? (item.jenisPasti ?? "pengeluaran") : n.jenis;
-        const trx = await sisipkan(db, penggunaId, {
-          ...dasar, jenis, arah: arahUntuk(jenis, item.deskripsi, arah), kategoriId: null, sumber: "tanya_balik",
-        }, sekarang);
-        hasil.push({ transaksi: trx, tanya: { tanyaJenis: n.tanyaJenis } });
-      }
-      continue;
-    }
-
-    // AI tidak tersedia (nonaktif, error, lambat, kuota habis): langsung tanya balik.
-    if (t && !t.ok && t.alasan !== "tidak_aktif") aiTersedia = false;
-    const jenis = item.jenisPasti ?? "pengeluaran";
+    const a = aturItem(item, m);
+    if (a.dariMemori) await tandaiDipakai(db, m!.id, sekarang);
+    // Belum dikenal: tersimpan tanpa kategori, kategorinya ditanyakan (tanya balik).
     const trx = await sisipkan(db, penggunaId, {
-      ...dasar, jenis, arah: arahUntuk(jenis, item.deskripsi), kategoriId: null, sumber: "tanya_balik",
+      tanggal: baca.tanggal, nominal: item.nominal, deskripsi: item.deskripsi, teksAsli: teks.trim(), caraInput: cara,
+      jenis: a.jenis, arah: arahUntuk(a.jenis, item.deskripsi), kategoriId: a.kategoriId,
+      sumber: a.dariMemori ? "memori" : "tanya_balik",
     }, sekarang);
-    hasil.push({ transaksi: trx, tanya: { tanyaJenis: !item.jenisPasti } });
+    hasil.push({ transaksi: trx, tanya: a.dariMemori ? null : { tanyaJenis: !item.jenisPasti } });
   }
 
-  return { ok: true, tanggalDariTeks: baca.tanggalDariTeks, aiTersedia, hasil };
+  return { ok: true, tanggalDariTeks: baca.tanggalDariTeks, hasil };
+}
+
+export type HasilRapikan = { ok: true; teks: string } | { ok: false; alasan: "tanpa_nominal" | "tidak_tersedia" | "kuota" };
+
+/**
+ * Cadangan input suara (PRD versi 3): teks yang nominalnya tidak terbaca parser dikirim ke
+ * Gemini untuk ditulis ulang. Yang dikirim hanya teks. Hasilnya harus lolos parser, kalau tidak
+ * dianggap tetap tanpa nominal.
+ */
+export async function rapikanSuara(ai: LayananAI, teks: string): Promise<HasilRapikan> {
+  const isi = teks.trim().slice(0, 500);
+  if (!isi) return { ok: false, alasan: "tanpa_nominal" };
+  const hasil = await ai.rapikanSuara(isi);
+  if (!hasil.ok) return { ok: false, alasan: hasil.alasan === "kuota" ? "kuota" : "tidak_tersedia" };
+  return hasil.data && bacaInput(hasil.data).ok ? { ok: true, teks: hasil.data } : { ok: false, alasan: "tanpa_nominal" };
 }
 
 // ---------- tanya balik, edit, manual, hapus ----------
@@ -329,7 +335,7 @@ export async function tambahManual(deps: Deps, data: TransaksiManual): Promise<T
   const arah = jenis === "investasi" ? (data.arah ?? arahUntuk(jenis, deskripsi)) : arahUntuk(jenis, deskripsi);
 
   const trx = await sisipkan(deps.db, deps.penggunaId, {
-    tanggal, nominal, jenis, arah, kategoriId, deskripsi, teksAsli: deskripsi, sumber: "manual",
+    tanggal, nominal, jenis, arah, kategoriId, deskripsi, teksAsli: deskripsi, sumber: "manual", caraInput: "form",
   }, sekarang);
   await simpanMemori(deps.db, deps.penggunaId, { deskripsi, jenis, kategoriId, asal: "manual" }, sekarang);
   return trx;

@@ -11,7 +11,7 @@ function aiAnalisis(isi = "Pengeluaran naik.") {
   const terkirim: unknown[] = [];
   const ai: LayananAI = {
     aktif: true,
-    tebakKategori: async () => ({ ok: false, alasan: "error" }),
+    rapikanSuara: async () => ({ ok: false, alasan: "error" }),
     buatAnalisis: async (data) => {
       terkirim.push(data);
       return { ok: true, data: isi };

@@ -8,7 +8,7 @@ export default function Halaman() {
   return (
     <main className="halaman-teks">
       <h1>Kebijakan Privasi</h1>
-      <p className="halaman-teks-sub">Berlaku sejak 15 Oktober 2026.</p>
+      <p className="halaman-teks-sub">Berlaku sejak 15 Oktober 2026, diperbarui 18 Oktober 2026 (input suara).</p>
 
       <p>
         Financial Detector adalah aplikasi pencatat pengeluaran pribadi. Halaman ini menjelaskan data apa yang
@@ -42,12 +42,20 @@ export default function Halaman() {
         <li><b>Google Sign-In</b> untuk login.</li>
         <li><b>Vercel</b> (server aplikasi) dan <b>Turso</b> (database) untuk menyimpan data.</li>
         <li>
-          <b>Google Gemini</b> (AI): deskripsi pendek transaksi yang belum dikenali (misalnya &quot;kopi&quot;) dan
-          ringkasan bulanan dikirim ke Gemini untuk ditebak kategorinya atau dianalisis. Nama, email, dan nominal
-          per transaksi tidak ikut dikirim untuk tebakan kategori. Aplikasi memakai Gemini versi gratis, di mana
-          Google dapat memakai input tersebut untuk mengembangkan produknya.
+          <b>Google Gemini</b> (AI), hanya di dua tempat: ringkasan bulanan saat kamu menekan Perbarui di halaman
+          Analisis AI, dan teks hasil input suara yang nominalnya tidak terbaca (misalnya &quot;rasela dua lima&quot;).
+          Kategori transaksi tidak ditebak AI, melainkan diambil dari catatanmu sendiri. Nama dan email tidak ikut
+          dikirim. Aplikasi memakai Gemini versi gratis, di mana Google dapat memakai input tersebut untuk
+          mengembangkan produknya.
         </li>
       </ul>
+
+      <h2>Input suara</h2>
+      <p>
+        Suara diubah menjadi teks oleh fitur pengenal suara bawaan browser atau HP-mu (di iPhone oleh layanan
+        Apple, di Chrome oleh Google). Aplikasi ini hanya menerima teksnya. Rekaman suara tidak disimpan dan tidak
+        pernah dikirim ke server aplikasi ini maupun ke layanan AI.
+      </p>
 
       <h2>Mode demo</h2>
       <p>

@@ -25,7 +25,6 @@ async function HalamanDasbor() {
   return (
     <Dasbor
       hariIni={tanggal}
-      aiAktif={Boolean(process.env.GEMINI_API_KEY)}
       awal={{ kategori, transaksi, transaksiLalu }}
       akun={{ nama: pengguna.nama, email: pengguna.email, admin: pengguna.admin }}
     />

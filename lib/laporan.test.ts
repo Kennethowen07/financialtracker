@@ -13,6 +13,7 @@ function trx(tanggal: string, nominal: number, jenis: Transaksi["jenis"] = "peng
     kategori: { id: 1, nama: "Makanan & Minuman", ikon: "makan" },
     deskripsi: "makan",
     sumber: "memori",
+    caraInput: "ketik",
     dikoreksi: false,
     perluTanya: false,
     dibuatPada: "2026-10-01T00:00:00Z",

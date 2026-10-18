@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { cariMemori, cocokkan, contohMirip, jarakEdit, normalisasi, simpanMemori, type EntriMemori } from "./memori";
+import { cariMemori, cocokkan, jarakEdit, normalisasi, simpanMemori, type EntriMemori } from "./memori";
 import { buatDbUji, buatPenggunaUji, idKategori } from "./db-uji";
 
 describe("normalisasi", () => {
@@ -90,17 +90,5 @@ describe("memori di database", () => {
     const gaji = await idKategori(db, "Gaji");
     await simpanMemori(db, uid, { deskripsi: "gaji budi", jenis: "usaha", kategoriId: gaji, asal: "tanya_balik" });
     expect(await cariMemori(db, uid, "gaji budi")).toMatchObject({ jenis: "usaha", kategoriId: null });
-  });
-
-  test("contohMirip mengambil entri yang berbagi kata", async () => {
-    const db = await buatDbUji();
-    const uid = await buatPenggunaUji(db);
-    const makan = await idKategori(db, "Makanan & Minuman");
-    await simpanMemori(db, uid, { deskripsi: "kopi gereja", jenis: "pengeluaran", kategoriId: makan, asal: "manual" });
-    await simpanMemori(db, uid, { deskripsi: "bensin", jenis: "pengeluaran", kategoriId: null, asal: "manual" });
-
-    expect(await contohMirip(db, uid, "kopi kenangan")).toEqual([
-      { kataKunci: "kopi gereja", jenis: "pengeluaran", kategori: "Makanan & Minuman" },
-    ]);
   });
 });

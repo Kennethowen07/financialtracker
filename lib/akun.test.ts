@@ -123,17 +123,16 @@ describe("kuota AI per akun", () => {
     let dipanggil = 0;
     const ai: LayananAI = {
       aktif: true,
-      tebakKategori: async () => {
+      rapikanSuara: async () => {
         dipanggil++;
-        return { ok: true, data: { jenis: "pengeluaran", kategori: "Belanja", arah: "keluar", yakinJenis: true, yakinKategori: true } };
+        return { ok: true, data: "rasela 25000" };
       },
       buatAnalisis: async () => ({ ok: true, data: "x" }),
     };
     let sisa = 1;
     const terbatas = denganKuota(ai, async () => sisa-- > 0);
-    const input = { deskripsi: "rasela", kategori: [], contoh: [] };
-    expect((await terbatas.tebakKategori(input)).ok).toBe(true);
-    expect(await terbatas.tebakKategori(input)).toEqual({ ok: false, alasan: "kuota" });
+    expect((await terbatas.rapikanSuara("rasela dua lima")).ok).toBe(true);
+    expect(await terbatas.rapikanSuara("rasela dua lima")).toEqual({ ok: false, alasan: "kuota" });
     expect(dipanggil).toBe(1);
   });
 });

@@ -3,13 +3,17 @@
 // - Mode demo (Tahap 7): disimpan di browser pengunjung.
 // Komponen tampilan hanya mengenal interface ini, jadi tampilannya sama untuk kedua mode.
 import type { Kategori } from "./kategori";
-import type { HasilCatat, PilihanKategori, Transaksi, TransaksiManual, UbahTransaksi } from "./transaksi";
+import type { HasilCatat, HasilPratinjau, HasilRapikan, PilihanKategori, Transaksi, TransaksiManual, UbahTransaksi } from "./transaksi";
 
 export interface Gudang {
   mode: "pribadi" | "demo";
   kategori(): Promise<Kategori[]>;
   transaksiBulan(bulan: string): Promise<Transaksi[]>;
-  catat(teks: string): Promise<HasilCatat>;
+  catat(teks: string, cara?: "ketik" | "suara"): Promise<HasilCatat>;
+  /** Kartu hasil input suara: apa yang akan tersimpan, tanpa menyimpan. */
+  pratinjau(teks: string): Promise<HasilPratinjau>;
+  /** Cadangan input suara saat nominal tidak terbaca (memakai kuota AI). */
+  rapikanSuara(teks: string): Promise<HasilRapikan>;
   jawab(id: number, pilihan: PilihanKategori): Promise<Transaksi>;
   edit(id: number, ubah: UbahTransaksi): Promise<Transaksi>;
   tambahManual(data: TransaksiManual): Promise<Transaksi>;
@@ -55,6 +59,8 @@ export function denganSesi(gudang: Gudang, keMasuk: () => void): Gudang {
     kategori: jaga(gudang.kategori),
     transaksiBulan: jaga(gudang.transaksiBulan),
     catat: jaga(gudang.catat),
+    pratinjau: jaga(gudang.pratinjau),
+    rapikanSuara: jaga(gudang.rapikanSuara),
     jawab: jaga(gudang.jawab),
     edit: jaga(gudang.edit),
     tambahManual: jaga(gudang.tambahManual),
@@ -66,7 +72,9 @@ export const gudangServer: Gudang = {
   mode: "pribadi",
   kategori: () => minta("/api/kategori"),
   transaksiBulan: (bulan) => minta(`/api/transaksi?bulan=${bulan}`),
-  catat: (teks) => minta("/api/catat", kirim({ teks })),
+  catat: (teks, cara = "ketik") => minta("/api/catat", kirim({ teks, cara })),
+  pratinjau: (teks) => minta("/api/pratinjau", kirim({ teks })),
+  rapikanSuara: (teks) => minta("/api/suara", kirim({ teks })),
   jawab: (id, pilihan) => minta(`/api/transaksi/${id}/jawab`, kirim(pilihan)),
   edit: (id, ubah) => minta(`/api/transaksi/${id}`, kirim(ubah, "PATCH")),
   tambahManual: (data) => minta("/api/transaksi", kirim(data)),

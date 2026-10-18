@@ -164,6 +164,20 @@ function IkonTransaksi({ t }: { t: Transaksi }) {
   );
 }
 
+/** Deskripsi + tanda kecil kalau dicatat lewat suara. */
+function Deskripsi({ t }: { t: Transaksi }) {
+  return (
+    <span className="trx-deskripsi">
+      {t.deskripsi}
+      {t.caraInput === "suara" && (
+        <span className="trx-suara" title="Dicatat lewat suara">
+          <Ikon nama="mikrofon" ukuran={12} label="lewat suara" />
+        </span>
+      )}
+    </span>
+  );
+}
+
 function Nominal({ t }: { t: Transaksi }) {
   const masuk = t.arah === "masuk";
   return <span className={masuk ? "trx-nominal masuk num" : "trx-nominal num"}>{masuk ? "+" : ""}{rupiah(t.nominal)}</span>;
@@ -211,7 +225,7 @@ export function DaftarPerHari({ transaksi, sementara, hariIni, onPilih }: PropsD
             {g.transaksi.map((t) => (
               <button key={t.id} type="button" className="trx-baris" onClick={() => onPilih(t)}>
                 <IkonTransaksi t={t} />
-                <span className="trx-deskripsi">{t.deskripsi}</span>
+                <Deskripsi t={t} />
                 <Nominal t={t} />
               </button>
             ))}
@@ -257,7 +271,7 @@ export function TabelTransaksi({ transaksi, sementara, onPilih }: PropsDaftar) {
           <button key={t.id} type="button" className="tabel-baris" onClick={() => onPilih(t)}>
             <span className="tabel-tanggal">{tanggalPendek(t.tanggal)}</span>
             <IkonTransaksi t={t} />
-            <span className="trx-deskripsi">{t.deskripsi}</span>
+            <Deskripsi t={t} />
             <Nominal t={t} />
           </button>
         ))}

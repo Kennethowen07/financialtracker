@@ -21,7 +21,6 @@ export function DasborDemo({ hariIni, aiAktif }: { hariIni: string; aiAktif: boo
   return (
     <Dasbor
       hariIni={hariIni}
-      aiAktif={aiAktif && !habis}
       gudang={gudang}
       contoh={["makan 25000", "rasela 25000", "gaji 5000000"]}
       kepala={

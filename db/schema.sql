@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS transaksi (
   dikoreksi   INTEGER NOT NULL DEFAULT 0 CHECK (dikoreksi IN (0, 1)),
   dibuat_pada TEXT    NOT NULL,
   pengguna_id INTEGER REFERENCES pengguna (id),
+  -- Cara transaksi dimasukkan (dipakai untuk mengukur pemakaian input suara).
+  cara_input  TEXT    NOT NULL DEFAULT 'ketik' CHECK (cara_input IN ('ketik', 'suara', 'form', 'import')),
   -- Usaha tidak boleh punya kategori.
   CHECK (jenis <> 'usaha' OR kategori_id IS NULL),
   CHECK (jenis = 'investasi' OR arah = CASE jenis WHEN 'pemasukan' THEN 'masuk' ELSE 'keluar' END)

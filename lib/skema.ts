@@ -46,6 +46,16 @@ async function migrasi(client: Client): Promise<void> {
     );
   }
   if (!kolomTransaksi.has("pengguna_id")) await migrasiAkun(client);
+  if (!kolomTransaksi.has("cara_input")) {
+    await client.batch(
+      [
+        "ALTER TABLE transaksi ADD COLUMN cara_input TEXT NOT NULL DEFAULT 'ketik' CHECK (cara_input IN ('ketik', 'suara', 'form', 'import'))",
+        "UPDATE transaksi SET cara_input = 'import' WHERE sumber = 'import'",
+        "UPDATE transaksi SET cara_input = 'form' WHERE sumber = 'manual'",
+      ],
+      "write",
+    );
+  }
 }
 
 /**

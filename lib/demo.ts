@@ -1,13 +1,12 @@
 // Gudang mode demo: semua data pengunjung disimpan di browser mereka (localStorage),
-// tidak pernah masuk database. AI hanya dipanggil lewat /api/demo/tebak (berkuota).
-// Aturan sama dengan mode pribadi: parser → memori → AI → tanya balik.
-import type { HasilAI, TebakanKategori } from "./ai";
+// tidak pernah masuk database. AI hanya dipanggil lewat /api/demo/suara (berkuota),
+// sebagai cadangan input suara. Aturan sama dengan mode pribadi: parser → memori → tanya balik.
 import type { Gudang } from "./gudang";
 import type { Kategori } from "./kategori";
 import { KATEGORI_BAWAAN } from "./kategori-bawaan";
 import { cocokkan, normalisasi, type EntriMemori } from "./memori";
 import { bacaInput, type Jenis } from "./parser";
-import { arahUntuk, nilaiTebakan, type HasilItem, type PilihanKategori, type Sumber, type Transaksi } from "./transaksi";
+import { arahUntuk, aturItem, type CaraInput, type HasilItem, type PilihanKategori, type Sumber, type Transaksi } from "./transaksi";
 
 const KUNCI = "financial-detector-demo-v1";
 
@@ -97,10 +96,13 @@ export function buatGudangDemo(opsi: OpsiDemo): Gudang {
     return k.id;
   }
 
-  function buat(t: Omit<Transaksi, "id" | "kategori" | "perluTanya" | "dikoreksi" | "dibuatPada"> & { kategoriId: number | null }): Transaksi {
-    const { kategoriId, ...isi } = t;
+  function buat(
+    t: Omit<Transaksi, "id" | "kategori" | "perluTanya" | "dikoreksi" | "dibuatPada" | "caraInput"> & { kategoriId: number | null; caraInput?: CaraInput },
+  ): Transaksi {
+    const { kategoriId, caraInput, ...isi } = t;
     const trx: Transaksi = {
       ...isi,
+      caraInput: caraInput ?? "ketik",
       id: d().idBerikut++,
       kategori: ringkasKategori(kategoriId),
       perluTanya: kategoriId === null && t.jenis !== "usaha",
@@ -121,26 +123,6 @@ export function buatGudangDemo(opsi: OpsiDemo): Gudang {
     return { ...t };
   }
 
-  async function tanyaAI(deskripsi: string): Promise<HasilAI<TebakanKategori>> {
-    const kata = new Set(normalisasi(deskripsi).split(" ").filter((k) => k.length >= 3));
-    const contoh = d().memori
-      .filter((m) => m.kataKunci.split(" ").some((k) => kata.has(k)))
-      .slice(0, 5)
-      .map((m) => ({ kataKunci: m.kataKunci, jenis: m.jenis, kategori: ringkasKategori(m.kategoriId)?.nama ?? null }));
-    try {
-      const res = await fetch("/api/demo/tebak", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deskripsi, contoh }),
-      });
-      const hasil = await res.json();
-      if (typeof hasil.sisa === "number") opsi.padaKuota(hasil.sisa);
-      return hasil.ok ? { ok: true, data: hasil.data } : { ok: false, alasan: hasil.alasan ?? "error" };
-    } catch {
-      return { ok: false, alasan: "error" };
-    }
-  }
-
   return {
     mode: "demo",
 
@@ -152,41 +134,50 @@ export function buatGudangDemo(opsi: OpsiDemo): Gudang {
       return d().transaksi.filter((t) => t.tanggal.startsWith(bulan)).map((t) => ({ ...t }));
     },
 
-    async catat(teks) {
+    async catat(teks, cara = "ketik") {
       const baca = bacaInput(teks);
       if (!baca.ok) return baca;
-      let aiTersedia = true;
       const hasil: HasilItem[] = [];
       for (const item of baca.items) {
-        const dasar = { tanggal: baca.tanggal, nominal: item.nominal, deskripsi: item.deskripsi };
-        const m = cocokkan(item.deskripsi, d().memori);
-        if (m && (!item.jenisPasti || item.jenisPasti === m.jenis)) {
-          // Ketemu di memori: tidak memanggil AI, tidak mengurangi kuota.
-          const trx = buat({ ...dasar, jenis: m.jenis, arah: arahUntuk(m.jenis, item.deskripsi), kategoriId: m.kategoriId, sumber: "memori" });
-          hasil.push({ transaksi: trx, tanya: null });
-          continue;
-        }
-        const t = await tanyaAI(item.deskripsi);
-        if (t.ok) {
-          const n = nilaiTebakan(t.data, semuaKategori(), item.jenisPasti);
-          if (n.yakin) {
-            const trx = buat({ ...dasar, jenis: n.jenis, arah: arahUntuk(n.jenis, item.deskripsi, n.arah), kategoriId: n.kategoriId, sumber: "ai" });
-            ingat(item.deskripsi, n.jenis, n.kategoriId);
-            hasil.push({ transaksi: trx, tanya: null });
-            continue;
-          }
-          const jenis = n.tanyaJenis ? (item.jenisPasti ?? "pengeluaran") : n.jenis;
-          const trx = buat({ ...dasar, jenis, arah: arahUntuk(jenis, item.deskripsi), kategoriId: null, sumber: "tanya_balik" });
-          hasil.push({ transaksi: trx, tanya: { tanyaJenis: n.tanyaJenis } });
-          continue;
-        }
-        aiTersedia = false;
-        const jenis = item.jenisPasti ?? "pengeluaran";
-        const trx = buat({ ...dasar, jenis, arah: arahUntuk(jenis, item.deskripsi), kategoriId: null, sumber: "tanya_balik" });
-        hasil.push({ transaksi: trx, tanya: { tanyaJenis: !item.jenisPasti } });
+        const dasar = { tanggal: baca.tanggal, nominal: item.nominal, deskripsi: item.deskripsi, caraInput: cara };
+        const a = aturItem(item, cocokkan(item.deskripsi, d().memori));
+        const trx = buat({
+          ...dasar, jenis: a.jenis, arah: arahUntuk(a.jenis, item.deskripsi), kategoriId: a.kategoriId,
+          sumber: a.dariMemori ? "memori" : "tanya_balik",
+        });
+        hasil.push({ transaksi: trx, tanya: a.dariMemori ? null : { tanyaJenis: !item.jenisPasti } });
       }
       simpan();
-      return { ok: true, tanggalDariTeks: baca.tanggalDariTeks, aiTersedia, hasil };
+      return { ok: true, tanggalDariTeks: baca.tanggalDariTeks, hasil };
+    },
+
+    async pratinjau(teks) {
+      const baca = bacaInput(teks);
+      if (!baca.ok) return baca;
+      return {
+        ok: true,
+        tanggal: baca.tanggal,
+        items: baca.items.map((item) => {
+          const a = aturItem(item, cocokkan(item.deskripsi, d().memori));
+          const kategori = ringkasKategori(a.kategoriId);
+          return { deskripsi: item.deskripsi, nominal: item.nominal, jenis: a.jenis, kategori, perluTanya: a.jenis !== "usaha" && !kategori };
+        }),
+      };
+    },
+
+    async rapikanSuara(teks) {
+      try {
+        const res = await fetch("/api/demo/suara", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ teks }),
+        });
+        const hasil = await res.json();
+        if (typeof hasil.sisa === "number") opsi.padaKuota(hasil.sisa);
+        return hasil.ok ? { ok: true, teks: String(hasil.teks) } : { ok: false, alasan: hasil.alasan ?? "tidak_tersedia" };
+      } catch {
+        return { ok: false, alasan: "tidak_tersedia" };
+      }
     },
 
     async jawab(id, pilihan: PilihanKategori) {
@@ -222,7 +213,7 @@ export function buatGudangDemo(opsi: OpsiDemo): Gudang {
       if (data.tanggal > opsi.hariIni()) throw new Error("Tanggal masa depan tidak boleh");
       const kategoriId = tentukan(data.jenis, data);
       const arah = data.jenis === "investasi" ? (data.arah ?? "keluar") : arahUntuk(data.jenis, data.deskripsi);
-      const trx = buat({ tanggal: data.tanggal, nominal: data.nominal, deskripsi: data.deskripsi, jenis: data.jenis, arah, kategoriId, sumber: "manual" });
+      const trx = buat({ tanggal: data.tanggal, nominal: data.nominal, deskripsi: data.deskripsi, jenis: data.jenis, arah, kategoriId, sumber: "manual", caraInput: "form" });
       ingat(data.deskripsi, data.jenis, kategoriId);
       simpan();
       return trx;

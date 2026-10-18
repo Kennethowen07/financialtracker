@@ -85,6 +85,13 @@ describe("migrasi database lama ke multi-akun", () => {
     }
   });
 
+  test("cara_input transaksi lama diisi dari sumbernya (manual → form, lainnya → ketik)", async () => {
+    const db = await dbLama();
+    await siapkanDatabase(db);
+    const { rows } = await db.execute("SELECT deskripsi, cara_input FROM transaksi ORDER BY id");
+    expect(rows.map((r) => [r.deskripsi, r.cara_input])).toEqual([["rasela", "form"], ["pakan kucing", "ketik"]]);
+  });
+
   test("aman dijalankan berulang kali", async () => {
     const db = await dbLama();
     await siapkanDatabase(db);

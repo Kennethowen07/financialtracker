@@ -148,38 +148,3 @@ export async function simpanMemori(
   });
 }
 
-/**
- * Contoh memori yang mirip untuk dikirim ke AI (RAG ringan, docs/PRD.md "Peran AI").
- * Diurutkan dari yang paling banyak berbagi kata, lalu yang paling baru dipakai.
- */
-export async function contohMirip(
-  client: Client,
-  penggunaId: number,
-  deskripsi: string,
-  batas = 5,
-): Promise<{ kataKunci: string; jenis: Jenis; kategori: string | null }[]> {
-  const kata = new Set(normalisasi(deskripsi).split(" ").filter((k) => k.length >= 3));
-  if (kata.size === 0) return [];
-  const { rows } = await client.execute({
-    sql: `SELECT m.kata_kunci, m.jenis, k.nama AS kategori, m.terakhir_dipakai
-          FROM memori m LEFT JOIN kategori k ON k.id = m.kategori_id
-          WHERE m.pengguna_id = ?`,
-    args: [penggunaId],
-  });
-  return rows
-    .map((r) => {
-      const kunci = String(r.kata_kunci);
-      const skor = kunci.split(" ").filter((k) => kata.has(k)).length;
-      return {
-        kataKunci: kunci,
-        jenis: r.jenis as Jenis,
-        kategori: r.kategori == null ? null : String(r.kategori),
-        skor,
-        waktu: String(r.terakhir_dipakai),
-      };
-    })
-    .filter((r) => r.skor > 0)
-    .sort((a, b) => b.skor - a.skor || b.waktu.localeCompare(a.waktu))
-    .slice(0, batas)
-    .map(({ kataKunci, jenis, kategori }) => ({ kataKunci, jenis, kategori }));
-}

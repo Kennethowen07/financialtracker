@@ -11,10 +11,12 @@ import { ringkas } from "@/lib/laporan";
 import { bacaInput, type AlasanGagalBaca } from "@/lib/parser";
 import { bulanSebelumnya } from "@/lib/tanggal";
 import { labelTanggal } from "@/lib/format";
+import { usePengenalSuara, type GagalSuara } from "@/lib/suara";
 import type { PilihanKategori, Transaksi, TransaksiManual } from "@/lib/transaksi";
 import { DaftarPerHari, GrafikMinggu, KartuRingkasan, PemilihBulan, PerKategori, TabelTransaksi, type ItemSementara } from "./Bagian";
 import { FormTransaksi, PanelTanya } from "./Lembar";
 import { Ikon } from "./Ikon";
+import { KartuSuara, TombolMikrofon, type KeadaanKartu } from "./InputSuara";
 import { Kerangka } from "./Kerangka";
 
 export interface DataAwal {
@@ -25,14 +27,13 @@ export interface DataAwal {
 
 interface Props {
   hariIni: string;
-  aiAktif: boolean;
   awal?: DataAwal;
   gudang?: Gudang;
   /** Isi tambahan di samping pemilih bulan (mis. label kuota demo). */
   kepala?: ReactNode;
   /** Tombol contoh yang mengisi kotak input saat belum ada transaksi (mode demo). */
   contoh?: string[];
-  /** Dipanggil setelah teks dicatat (mode demo memakai ini untuk memperbarui kuota). */
+  /** Dipanggil setelah teks dicatat atau AI dipakai (mode demo memakai ini untuk memperbarui kuota). */
   setelahCatat?: () => void;
   /** Akun yang login (kosong di mode demo). */
   akun?: InfoAkun;
@@ -45,6 +46,15 @@ const PESAN_GAGAL: Record<AlasanGagalBaca, string> = {
   tanggal_tidak_valid: "Tanggalnya tidak valid",
 };
 
+/** Pesan saat input suara gagal. izin_layanan: pelajaran dari tes di iPhone (docs/PROGRESSAI.md). */
+const PESAN_SUARA: Record<GagalSuara, string> = {
+  tidak_terdengar: "Suara nggak tertangkap, coba lagi atau ketik",
+  izin_mikrofon: "Izin mikrofon ditolak. Izinkan mikrofon untuk situs ini di pengaturan browser",
+  izin_layanan: "Nyalakan Speech Recognition untuk Safari di Settings → Privacy & Security, lalu buka ulang",
+  jaringan: "Pengenal suara butuh internet, coba lagi atau ketik",
+  lain: "Suara nggak tertangkap, coba lagi atau ketik",
+};
+
 const urutkan = (a: Transaksi, b: Transaksi) => b.tanggal.localeCompare(a.tanggal) || b.id - a.id;
 
 interface Pesan {
@@ -52,7 +62,7 @@ interface Pesan {
   aksi?: { label: string; jalankan: () => void };
 }
 
-export function Dasbor({ hariIni, aiAktif, awal, gudang: gudangAsli = gudangServer, kepala, contoh, setelahCatat, akun }: Props) {
+export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepala, contoh, setelahCatat, akun }: Props) {
   const router = useRouter();
   const gudang = useMemo(() => denganSesi(gudangAsli, () => router.push("/masuk")), [gudangAsli, router]);
   const bulanIni = hariIni.slice(0, 7);
@@ -64,7 +74,7 @@ export function Dasbor({ hariIni, aiAktif, awal, gudang: gudangAsli = gudangServ
   const [sementara, setSementara] = useState<ItemSementara[]>([]);
   const [antrian, setAntrian] = useState<{ transaksi: Transaksi; tanyaJenis: boolean }[]>([]);
   const [edit, setEdit] = useState<Transaksi | "baru" | null>(null);
-  const [aiOff, setAiOff] = useState(!aiAktif);
+  const [kartu, setKartu] = useState<KeadaanKartu | null>(null);
   const [teks, setTeks] = useState("");
   const [pesan, setPesan] = useState<Pesan | null>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -119,6 +129,19 @@ export function Dasbor({ hariIni, aiAktif, awal, gudang: gudangAsli = gudangServ
       setPesan({ teks: PESAN_GAGAL[baca.alasan] });
       return;
     }
+    setTeks("");
+    input.current?.focus();
+    await catat(isi, "ketik");
+  }
+
+  /**
+   * Simpan teks (ketikan atau hasil suara). Transaksi langsung tampil dengan status memproses.
+   * Ketikan yang belum dikenal langsung ditanyakan; hasil suara tidak (dipakai sambil jalan),
+   * cukup diberi tahu jumlah yang belum dikategorikan.
+   */
+  async function catat(isi: string, cara: "ketik" | "suara") {
+    const baca = bacaInput(isi);
+    if (!baca.ok) return;
 
     // Langsung tampil dengan status memproses (PRD: transaksi tampil begitu dikirim).
     const kunci = baca.items.map(() => `s${++nomor.current}`);
@@ -128,23 +151,25 @@ export function Dasbor({ hariIni, aiAktif, awal, gudang: gudangAsli = gudangServ
         ...s,
       ]);
     }
-    setTeks("");
-    input.current?.focus();
 
     try {
-      const hasil = await gudang.catat(isi);
+      const hasil = await gudang.catat(isi, cara);
       if (!hasil.ok) {
         setPesan({ teks: PESAN_GAGAL[hasil.alasan] });
         setTeks(isi);
         return;
       }
-      setAiOff(!hasil.aiTersedia);
       for (const h of hasil.hasil) terapkan(h.transaksi);
       const tanya = hasil.hasil.filter((h) => h.tanya).map((h) => ({ transaksi: h.transaksi, tanyaJenis: h.tanya!.tanyaJenis }));
-      if (tanya.length) setAntrian((a) => [...a, ...tanya]);
+      if (tanya.length && cara === "ketik") setAntrian((a) => [...a, ...tanya]);
 
       const pertama = hasil.hasil[0].transaksi;
-      if (!pertama.tanggal.startsWith(bulan)) {
+      if (tanya.length && cara === "suara") {
+        setPesan({
+          teks: `Tersimpan. ${tanya.length} belum dikategorikan`,
+          aksi: { label: "Pilih", jalankan: () => setAntrian((a) => [...a, ...tanya]) },
+        });
+      } else if (!pertama.tanggal.startsWith(bulan)) {
         setPesan({ teks: `Tercatat untuk ${labelTanggal(pertama.tanggal, hariIni)}` });
       } else if (hasil.tanggalDariTeks && !tanya.length) {
         setPesan({ teks: `Dicatat untuk ${labelTanggal(pertama.tanggal, hariIni)}`, aksi: { label: "Ubah", jalankan: () => setEdit(pertama) } });
@@ -157,6 +182,57 @@ export function Dasbor({ hariIni, aiAktif, awal, gudang: gudangAsli = gudangServ
       setSementara((s) => s.filter((x) => !kunci.includes(x.kunci)));
     }
   }
+
+  // ---------- input suara ----------
+
+  const suara = usePengenalSuara({
+    onSelesai: (t) => void bacaSuara(t),
+    onGagal: (alasan) => {
+      setKartu(null);
+      setPesan({ teks: PESAN_SUARA[alasan] });
+    },
+  });
+
+  /** Hasil suara → pratinjau. Kalau nominal tidak terbaca, coba minta Gemini menulis ulang (berkuota). */
+  async function bacaSuara(teksSuara: string) {
+    setKartu({ tahap: "membaca", teks: teksSuara });
+    try {
+      let isi = teksSuara;
+      let p = await gudang.pratinjau(isi);
+      if (!p.ok && p.alasan === "tanpa_nominal") {
+        const r = await gudang.rapikanSuara(isi);
+        setelahCatat?.();
+        if (r.ok) {
+          isi = r.teks;
+          p = await gudang.pratinjau(isi);
+        }
+      }
+      if (!p.ok) {
+        keKotakInput(teksSuara, p.alasan === "tanpa_nominal" ? "Nominal nggak kebaca, cek lagi ya" : PESAN_GAGAL[p.alasan]);
+        return;
+      }
+      setKartu({ tahap: "siap", teks: isi, items: p.items });
+    } catch (err) {
+      keKotakInput(teksSuara, err instanceof Error ? err.message : "Gagal membaca, coba lagi");
+    }
+  }
+
+  function keKotakInput(isi: string, pesanTeks?: string) {
+    setKartu(null);
+    setTeks(isi);
+    if (pesanTeks) setPesan({ teks: pesanTeks });
+    input.current?.focus();
+  }
+
+  function simpanSuara() {
+    if (kartu?.tahap !== "siap") return;
+    setKartu(null);
+    void catat(kartu.teks, "suara");
+  }
+
+  // Selama ditahan, kartu menampilkan teks sementara yang sedang terdengar.
+  const kartuTampil: KeadaanKartu | null =
+    suara.status === "merekam" ? { tahap: "merekam", sementara: suara.sementara } : kartu;
 
   function pilihTransaksi(t: Transaksi) {
     if (t.perluTanya) setAntrian((a) => [{ transaksi: t, tanyaJenis: true }, ...a.filter((x) => x.transaksi.id !== t.id)]);
@@ -195,6 +271,7 @@ export function Dasbor({ hariIni, aiAktif, awal, gudang: gudangAsli = gudangServ
   }
 
   const tanyaSekarang = antrian[0];
+  const belumDikategorikan = daftar.filter((t) => t.perluTanya);
   const kosong = !memuat && daftar.length === 0 && sementara.length === 0;
   const demo = gudang.mode === "demo";
 
@@ -218,11 +295,18 @@ export function Dasbor({ hariIni, aiAktif, awal, gudang: gudangAsli = gudangServ
         )}
 
         <form className="kotak-input" onSubmit={kirim}>
-          {aiOff && (
-            <span className="label-ai-off" role="status">
-              <span className="titik-kuning" aria-hidden="true" />
-              AI off
-            </span>
+          {kartuTampil && (
+            <KartuSuara
+              keadaan={kartuTampil}
+              onSimpan={simpanSuara}
+              onBatal={() => {
+                setKartu(null);
+                input.current?.focus();
+              }}
+              onEdit={() => {
+                if (kartu?.tahap === "siap") keKotakInput(kartu.teks);
+              }}
+            />
           )}
           <button type="button" className="tombol-bulat input-menu" aria-label="Buka form manual" onClick={() => setEdit("baru")}>
             <Ikon nama="menu" ukuran={20} />
@@ -241,9 +325,21 @@ export function Dasbor({ hariIni, aiAktif, awal, gudang: gudangAsli = gudangServ
             value={teks}
             onChange={(e) => setTeks(e.target.value)}
           />
-          <button type="submit" className="tombol-kirim" aria-label="Kirim">
-            <Ikon nama="kirim" ukuran={20} tebal={2.2} />
-          </button>
+          {/* Seperti WhatsApp: selama kotak kosong, tombol kirim diganti mikrofon. */}
+          {suara.dukung && !teks.trim() ? (
+            <TombolMikrofon
+              status={suara.status}
+              onMulai={() => {
+                setKartu(null);
+                suara.mulai();
+              }}
+              onLepas={suara.lepas}
+            />
+          ) : (
+            <button type="submit" className="tombol-kirim" aria-label="Kirim">
+              <Ikon nama="kirim" ukuran={20} tebal={2.2} />
+            </button>
+          )}
         </form>
       </header>
 
@@ -268,6 +364,17 @@ export function Dasbor({ hariIni, aiAktif, awal, gudang: gudangAsli = gudangServ
           </section>
         )}
         {kosong && !contoh && <p className="kosong-besar">Belum ada transaksi di bulan ini. Ketik di kotak input, misalnya <b>makan 25000</b>.</p>}
+
+        {belumDikategorikan.length > 0 && (
+          <button
+            type="button"
+            className="penanda-belum"
+            onClick={() => setAntrian(belumDikategorikan.map((t) => ({ transaksi: t, tanyaJenis: true })))}
+          >
+            <span className="titik-kuning" aria-hidden="true" />
+            {belumDikategorikan.length} belum dikategorikan
+          </button>
+        )}
 
         <div className="hanya-hp">
           <DaftarPerHari transaksi={daftar} sementara={sementara} hariIni={hariIni} onPilih={pilihTransaksi} />
