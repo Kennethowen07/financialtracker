@@ -131,6 +131,8 @@ export interface BarisPeriksa extends ItemPeriksa {
   alasan: AlasanTidakDicentang | null;
   /** Untuk alasan "dobel": sumber baris yang sama di screenshot lain. */
   samaDengan?: string;
+  /** Kategori dipilih sendiri di layar periksa (bukan dari memori). */
+  dipilih?: boolean;
 }
 
 const kunciDobel = (b: { tanggal: string; nominal: number; arah: string }) => `${b.tanggal}|${b.nominal}|${b.arah}`;

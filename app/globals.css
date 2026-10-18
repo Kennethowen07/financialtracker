@@ -1994,7 +1994,7 @@ code {
 
 .mutasi-baris {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   min-height: 52px;
   padding: 10px 0;
@@ -2005,6 +2005,7 @@ code {
 .mutasi-baris input {
   width: 20px;
   height: 20px;
+  margin-top: 2px;
   flex-shrink: 0;
   accent-color: var(--accent);
 }
@@ -2036,4 +2037,43 @@ code {
 .mutasi-peringatan {
   font-size: 12px;
   color: var(--warn);
+}
+
+.mutasi-keterangan {
+  cursor: pointer;
+}
+
+/* Tombol kategori per baris di layar periksa. */
+.mutasi-kategori {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  margin-top: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  background: var(--card);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.mutasi-kategori svg {
+  color: var(--accent-light);
+}
+
+.mutasi-kategori.kosong {
+  border-style: dashed;
+  border-color: rgba(224, 163, 58, 0.5);
+  color: var(--warn);
+}
+
+.mutasi-kategori.kosong svg {
+  color: var(--warn);
+}
+
+.mutasi-pilih-kategori {
+  padding: 4px 0 12px 32px;
 }

@@ -339,4 +339,29 @@ describe("screenshot mutasi", () => {
     expect((await periksaMutasi(b, [mutasi()]))[0].tercatat).toBe(false);
     expect((await periksaMutasi(a, [mutasi()]))[0].tercatat).toBe(true);
   });
+
+  test("simpan: kategori yang dipilih di layar periksa dipakai dan diingat", async () => {
+    const deps = await siapkan();
+    const makan = await idKategori(deps.db, "Makanan & Minuman");
+    const [h] = await catatMutasi(deps, [
+      { tanggal: "2026-10-13", nominal: 53500, keterangan: "GrabFood", arah: "keluar", sumber: "Grab", kategoriId: makan },
+    ]);
+    expect(h).toMatchObject({ tanya: null, transaksi: { kategori: { nama: "Makanan & Minuman" }, perluTanya: false } });
+    expect(await cariMemori(deps.db, deps.penggunaId, "grabfood")).toMatchObject({ kategoriId: makan });
+    // Screenshot berikutnya langsung dikenali dari memori.
+    const [lagi] = await periksaMutasi(deps, [mutasi({ keterangan: "GrabFood", nominal: 28000, tanggal: "2026-10-07" })]);
+    expect(lagi.kategori?.nama).toBe("Makanan & Minuman");
+  });
+
+  test("simpan: kategori yang tidak cocok, tidak ada, atau milik akun lain ditolak", async () => {
+    const deps = await siapkan();
+    const gaji = await idKategori(deps.db, "Gaji");
+    const dasar = { tanggal: "2026-10-13", nominal: 53500, keterangan: "GrabFood", arah: "keluar" as const, sumber: "Grab" };
+    await expect(catatMutasi(deps, [{ ...dasar, kategoriId: gaji }])).rejects.toThrow("tidak cocok");
+    await expect(catatMutasi(deps, [{ ...dasar, kategoriId: 99999 }])).rejects.toThrow("tidak ditemukan");
+    const lain: Deps = { ...deps, penggunaId: await buatPenggunaUji(deps.db, "budi@uji.id") };
+    const punyaBudi = await tentukanKategori(deps.db, lain.penggunaId, "pengeluaran", { kategoriBaru: "Hobi Budi" });
+    await expect(catatMutasi(deps, [{ ...dasar, kategoriId: punyaBudi }])).rejects.toThrow("tidak ditemukan");
+    expect(await daftarTransaksi(deps.db, deps.penggunaId, "2026-10")).toHaveLength(0);
+  });
 });

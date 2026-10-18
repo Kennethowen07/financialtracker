@@ -57,7 +57,7 @@ function labelPendek(k: Kategori): string {
   return pendek[k.nama] ?? k.nama;
 }
 
-function GridKategori({
+export function GridKategori({
   kategori, jenis, terpilih, onPilih, besar = false,
 }: {
   kategori: Kategori[];

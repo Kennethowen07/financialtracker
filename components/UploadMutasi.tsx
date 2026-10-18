@@ -6,10 +6,11 @@ import { useEffect, useRef, useState } from "react";
 import { rupiah, tanggalPendek } from "@/lib/format";
 import { kecilkanGambar } from "@/lib/gambar";
 import type { Gudang } from "@/lib/gudang";
+import type { Kategori } from "@/lib/kategori";
 import { tandaiPeriksa, type BarisPeriksa, type ItemPeriksa } from "@/lib/mutasi";
 import type { HasilItem } from "@/lib/transaksi";
 import { Ikon } from "./Ikon";
-import { LembarBawah } from "./Lembar";
+import { GridKategori, LembarBawah } from "./Lembar";
 
 /** Menu dari tombol garis tiga: upload mutasi atau form manual. */
 export function MenuInput({ onMutasi, onManual, onTutup }: { onMutasi: (berkas: File[]) => void; onManual: () => void; onTutup: () => void }) {
@@ -58,12 +59,16 @@ type Tahap =
 interface Props {
   berkas: File[];
   gudang: Gudang;
+  /** Daftar kategori akun ini, untuk tombol ubah kategori per baris. */
+  kategori: Kategori[];
   onSelesai: (hasil: HasilItem[]) => void;
   onTutup: () => void;
 }
 
-export function LembarMutasi({ berkas, gudang, onSelesai, onTutup }: Props) {
+export function LembarMutasi({ berkas, gudang, kategori, onSelesai, onTutup }: Props) {
   const [tahap, setTahap] = useState<Tahap>({ nama: "membaca", ke: 1, dari: berkas.length });
+  /** Baris yang sedang dibuka pilihan kategorinya. */
+  const [buka, setBuka] = useState<number | null>(null);
   const [sibuk, setSibuk] = useState(false);
   const [galatSimpan, setGalatSimpan] = useState<string | null>(null);
 
@@ -100,9 +105,15 @@ export function LembarMutasi({ berkas, gudang, onSelesai, onTutup }: Props) {
     };
   }, [berkas, gudang]);
 
-  function ubahCentang(i: number) {
+  function ubahBaris(i: number, ubah: (b: BarisPeriksa) => BarisPeriksa) {
     if (tahap.nama !== "periksa") return;
-    setTahap({ ...tahap, baris: tahap.baris.map((b, j) => (j === i ? { ...b, centang: !b.centang } : b)) });
+    setTahap({ ...tahap, baris: tahap.baris.map((b, j) => (j === i ? ubah(b) : b)) });
+  }
+
+  /** Pilih kategori di layar periksa: baris ikut dicentang, dan pilihan diingat saat disimpan. */
+  function pilihKategori(i: number, k: Kategori) {
+    ubahBaris(i, (b) => ({ ...b, kategori: { id: k.id, nama: k.nama, ikon: k.ikon }, jenis: k.jenis, dipilih: true, centang: true }));
+    setBuka(null);
   }
 
   async function simpan() {
@@ -113,7 +124,11 @@ export function LembarMutasi({ berkas, gudang, onSelesai, onTutup }: Props) {
     setGalatSimpan(null);
     try {
       const hasil = await gudang.simpanMutasi!(
-        dipilih.map((b) => ({ tanggal: b.tanggal, nominal: b.nominal, keterangan: b.keterangan, arah: b.arah, sumber: b.sumber })),
+        dipilih.map((b) => ({
+          tanggal: b.tanggal, nominal: b.nominal, keterangan: b.keterangan, arah: b.arah, sumber: b.sumber,
+          // Hanya kategori yang dipilih di sini yang dikirim; sisanya ditentukan memori di server.
+          kategoriId: b.dipilih ? (b.kategori?.id ?? null) : null,
+        })),
       );
       onSelesai(hasil);
     } catch (err) {
@@ -155,14 +170,17 @@ export function LembarMutasi({ berkas, gudang, onSelesai, onTutup }: Props) {
           <ul className="mutasi-daftar">
             {tahap.baris.map((b, i) => (
               <li key={i}>
-                <label className={b.centang ? "mutasi-baris" : "mutasi-baris redup"}>
-                  <input type="checkbox" checked={b.centang} onChange={() => ubahCentang(i)} />
+                <div className={b.centang ? "mutasi-baris" : "mutasi-baris redup"}>
+                  <input
+                    id={`mutasi-${i}`}
+                    type="checkbox"
+                    checked={b.centang}
+                    onChange={() => ubahBaris(i, (x) => ({ ...x, centang: !x.centang }))}
+                  />
                   <span className="mutasi-isi">
-                    <span className="mutasi-keterangan">{b.keterangan}</span>
+                    <label htmlFor={`mutasi-${i}`} className="mutasi-keterangan">{b.keterangan}</label>
                     <span className="mutasi-detail">
                       {tanggalPendek(b.tanggal)}
-                      {" · "}
-                      {b.jenis === "pemasukan" && !b.kategori ? "pemasukan" : (b.kategori?.nama ?? <span className="mutasi-peringatan">belum ada kategori</span>)}
                       {b.pending && <span className="mutasi-peringatan"> · pending</span>}
                     </span>
                     {b.alasan && (
@@ -171,12 +189,32 @@ export function LembarMutasi({ berkas, gudang, onSelesai, onTutup }: Props) {
                         {b.alasan === "dobel" && b.samaDengan ? ` ${b.samaDengan}` : ""}
                       </span>
                     )}
+                    <button
+                      type="button"
+                      className={b.kategori ? "mutasi-kategori" : "mutasi-kategori kosong"}
+                      aria-expanded={buka === i}
+                      onClick={() => setBuka(buka === i ? null : i)}
+                    >
+                      <Ikon nama={b.kategori?.ikon ?? "tanya"} ukuran={14} />
+                      {b.kategori?.nama ?? "Pilih kategori"}
+                      <Ikon nama="bawah" ukuran={14} />
+                    </button>
                   </span>
                   <span className={b.arah === "masuk" ? "trx-nominal masuk num" : "trx-nominal num"}>
                     {b.arah === "masuk" ? "+" : ""}
                     {rupiah(b.nominal)}
                   </span>
-                </label>
+                </div>
+                {buka === i && (
+                  <div className="mutasi-pilih-kategori">
+                    <GridKategori
+                      kategori={kategori}
+                      jenis={b.arah === "masuk" ? "pemasukan" : b.jenis === "investasi" ? "investasi" : "pengeluaran"}
+                      terpilih={b.kategori?.id ?? null}
+                      onPilih={(k) => pilihKategori(i, k)}
+                    />
+                  </div>
+                )}
               </li>
             ))}
           </ul>

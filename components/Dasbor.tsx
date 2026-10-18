@@ -236,12 +236,13 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
 
   const bisaMutasi = Boolean(gudang.bacaMutasi);
 
+  // Kategori sudah bisa dipilih di layar periksa, jadi yang dibiarkan kosong tidak ditanyakan satu per
+  // satu; cukup penanda "belum dikategorikan" (permintaan pemilik, KEPUTUSAN 51).
   function selesaiMutasi(hasil: HasilItem[]) {
     setBerkasMutasi(null);
     for (const h of hasil) terapkan(h.transaksi);
-    const tanya = hasil.filter((h) => h.tanya).map((h) => ({ transaksi: h.transaksi, tanyaJenis: h.tanya!.tanyaJenis }));
-    if (tanya.length) setAntrian((a) => [...a, ...tanya]);
-    setPesan({ teks: `${hasil.length} transaksi dari mutasi tersimpan` });
+    const belum = hasil.filter((h) => h.transaksi.perluTanya).length;
+    setPesan({ teks: `${hasil.length} transaksi tersimpan${belum ? `, ${belum} belum dikategorikan` : ""}` });
   }
 
   function pilihTransaksi(t: Transaksi) {
@@ -434,7 +435,13 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
         />
       )}
       {!tanyaSekarang && !edit && berkasMutasi && (
-        <LembarMutasi berkas={berkasMutasi} gudang={gudang} onSelesai={selesaiMutasi} onTutup={() => setBerkasMutasi(null)} />
+        <LembarMutasi
+          berkas={berkasMutasi}
+          gudang={gudang}
+          kategori={kategori}
+          onSelesai={selesaiMutasi}
+          onTutup={() => setBerkasMutasi(null)}
+        />
       )}
       {!tanyaSekarang && edit && (
         <FormTransaksi

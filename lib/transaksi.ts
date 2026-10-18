@@ -276,11 +276,15 @@ export interface SimpanMutasi {
   keterangan: string;
   arah: Arah;
   sumber: string;
+  /** Kategori yang dipilih pengguna di layar periksa (opsional). Ikut diingat di memori. */
+  kategoriId?: number | null;
 }
 
 /**
  * Simpan baris mutasi yang dicentang. Semua isian divalidasi ulang di server.
- * cara_input "import" (mutasi = impor dari aplikasi lain, KEPUTUSAN 43); nama aplikasinya di teks_asli.
+ * cara_input "import" (mutasi = impor dari aplikasi lain, KEPUTUSAN 47); nama aplikasinya di teks_asli.
+ * Kategori: pilihan pengguna di layar periksa, kalau tidak ada dari memori, kalau tidak ada dibiarkan
+ * kosong (penanda "belum dikategorikan"; tidak ditanyakan satu per satu, KEPUTUSAN 51).
  */
 export async function catatMutasi(deps: Deps, items: SimpanMutasi[]): Promise<HasilItem[]> {
   const sekarang = deps.sekarang?.() ?? new Date();
@@ -292,12 +296,25 @@ export async function catatMutasi(deps: Deps, items: SimpanMutasi[]): Promise<Ha
     keterangan: cekDeskripsi(it?.keterangan),
     arah: (it?.arah === "masuk" ? "masuk" : "keluar") as Arah,
     sumber: typeof it?.sumber === "string" ? it.sumber.trim().slice(0, 30) : "",
+    kategoriId: it?.kategoriId == null ? null : Number(it.kategoriId),
   }));
 
+  // Kategori pilihan harus boleh dipakai akun ini dan cocok dengan arah uangnya.
+  const daftar = await daftarKategori(db, penggunaId);
+  const pilihan = bersih.map((it) => {
+    if (it.kategoriId === null) return null;
+    const k = daftar.find((x) => x.id === it.kategoriId);
+    if (!k) throw new KesalahanInput("Kategori tidak ditemukan");
+    const cocok = it.arah === "masuk" ? k.jenis === "pemasukan" || k.jenis === "investasi" : k.jenis !== "pemasukan";
+    if (!cocok) throw new KesalahanInput(`Kategori ${k.nama} tidak cocok dengan uang ${it.arah}`);
+    return k;
+  });
+
   const hasil: HasilItem[] = [];
-  for (const it of bersih) {
-    const m = await cariMemori(db, penggunaId, it.keterangan);
-    const a = aturMutasi(it.keterangan, it.nominal, it.arah, m);
+  for (const [i, it] of bersih.entries()) {
+    const k = pilihan[i];
+    const m = k ? null : await cariMemori(db, penggunaId, it.keterangan);
+    const a = k ? { jenis: k.jenis as Jenis, kategoriId: k.id, dariMemori: false } : aturMutasi(it.keterangan, it.nominal, it.arah, m);
     if (a.dariMemori) await tandaiDipakai(db, m!.id, sekarang);
     const trx = await sisipkan(db, penggunaId, {
       tanggal: it.tanggal, nominal: it.nominal, deskripsi: it.keterangan,
@@ -305,7 +322,9 @@ export async function catatMutasi(deps: Deps, items: SimpanMutasi[]): Promise<Ha
       jenis: a.jenis, arah: a.jenis === "investasi" ? it.arah : arahUntuk(a.jenis, it.keterangan),
       kategoriId: a.kategoriId, sumber: a.dariMemori ? "memori" : "tanya_balik",
     }, sekarang);
-    hasil.push({ transaksi: trx, tanya: a.dariMemori ? null : { tanyaJenis: it.arah === "keluar" } });
+    // Pilihan di layar periksa diingat, jadi screenshot berikutnya langsung dikenali.
+    if (k) await simpanMemori(db, penggunaId, { deskripsi: it.keterangan, jenis: a.jenis, kategoriId: k.id, asal: "tanya_balik" }, sekarang);
+    hasil.push({ transaksi: trx, tanya: a.kategoriId === null && a.jenis !== "usaha" ? { tanyaJenis: it.arah === "keluar" } : null });
   }
   return hasil;
 }
