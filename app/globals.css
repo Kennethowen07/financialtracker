@@ -2077,3 +2077,117 @@ code {
 .mutasi-pilih-kategori {
   padding: 4px 0 12px 32px;
 }
+
+/* ================= panduan demo ================= */
+
+.panduan {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid rgba(79, 201, 168, 0.35);
+}
+
+.panduan-kepala {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panduan-langkah {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-light);
+}
+
+.panduan-lewati {
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font-size: 13px;
+  min-height: 32px;
+}
+
+.panduan-judul {
+  font-size: 17px;
+}
+
+.panduan-daftar,
+.panduan-catatan {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+.panduan-daftar svg {
+  vertical-align: -2px;
+}
+
+.panduan-teks {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+.panduan-tips {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.panduan-tips svg {
+  vertical-align: -2px;
+}
+
+.panduan-catatan a {
+  color: var(--accent-light);
+}
+
+.panduan-google {
+  align-self: flex-start;
+}
+
+.panduan-berhasil {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-light);
+}
+
+.panduan-tombol {
+  display: flex;
+  gap: 8px;
+}
+
+.panduan-tombol > button {
+  flex: 1;
+  min-height: 44px;
+}
+
+.panduan-buka {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  background: var(--card);
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* Tombol yang sedang dibahas panduan berdenyut. */
+body[data-panduan="mik"] .tombol-mik:not(.merekam),
+body[data-panduan="input"] .input-catat {
+  animation: sorot-panduan 1.6s ease-in-out infinite;
+}
+
+@keyframes sorot-panduan {
+  50% {
+    box-shadow: 0 0 0 7px rgba(79, 201, 168, 0.3);
+  }
+}

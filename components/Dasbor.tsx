@@ -34,8 +34,10 @@ interface Props {
   kepala?: ReactNode;
   /** Tombol contoh yang mengisi kotak input saat belum ada transaksi (mode demo). */
   contoh?: string[];
-  /** Dipanggil setelah teks dicatat atau AI dipakai (mode demo memakai ini untuk memperbarui kuota). */
-  setelahCatat?: () => void;
+  /** Dipanggil setelah teks (ketik/suara) berhasil dicatat. Mode demo memakai ini untuk panduan. */
+  setelahCatat?: (cara: "ketik" | "suara") => void;
+  /** Isi tambahan di paling atas dashboard (mis. kartu panduan demo). */
+  atas?: ReactNode;
   /** Akun yang login (kosong di mode demo). */
   akun?: InfoAkun;
 }
@@ -63,7 +65,7 @@ interface Pesan {
   aksi?: { label: string; jalankan: () => void };
 }
 
-export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepala, contoh, setelahCatat, akun }: Props) {
+export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepala, contoh, setelahCatat, atas, akun }: Props) {
   const router = useRouter();
   const gudang = useMemo(() => denganSesi(gudangAsli, () => router.push("/masuk")), [gudangAsli, router]);
   const bulanIni = hariIni.slice(0, 7);
@@ -172,7 +174,7 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
       } else if (hasil.tanggalDariTeks && !tanya.length) {
         setPesan({ teks: `Dicatat untuk ${labelTanggal(pertama.tanggal, hariIni)}`, aksi: { label: "Ubah", jalankan: () => setEdit(pertama) } });
       }
-      setelahCatat?.();
+      setelahCatat?.(cara);
     } catch (err) {
       setTeks(isi);
       setPesan({ teks: err instanceof Error ? err.message : "Gagal menyimpan, coba lagi" });
@@ -199,7 +201,6 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
       let p = await gudang.pratinjau(isi);
       if (!p.ok && p.alasan === "tanpa_nominal") {
         const r = await gudang.rapikanSuara(isi);
-        setelahCatat?.();
         if (r.ok) {
           isi = r.teks;
           p = await gudang.pratinjau(isi);
@@ -360,6 +361,7 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
       </header>
 
       <main className={memuat ? "dasbor memuat" : "dasbor"} aria-busy={memuat}>
+        {atas}
         <KartuRingkasan r={r} />
         <div className="dua-kolom">
           <GrafikMinggu r={r} />
