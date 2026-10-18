@@ -54,44 +54,33 @@ function daftarLangkah(suara: boolean): Langkah[] {
           target: ".tombol-mik",
           judul: "Catat pakai suara",
           isi: (
-            <>
-              <p>
-                <b>Tahan</b> tombol ini, ucapkan <b>&quot;kopi lima belas ribu&quot;</b>, lalu <b>lepas</b>. Transaksi
-                tersimpan setelah hitung mundur 3 detik.
-              </p>
-              <p className="tur-kecil">
-                iPhone: kalau muncul pesan izin, buka Settings → Privacy &amp; Security → Speech Recognition, nyalakan Safari.
-              </p>
-            </>
+            <p>
+              <b>Tahan</b>, bilang <b>&quot;kopi lima belas ribu&quot;</b>, lalu <b>lepas</b>.
+            </p>
           ),
         }
       : {
           target: ".tombol-kirim",
           judul: "Catat pakai suara",
-          isi: <p>Browser ini belum mendukung pengenal suara. Coba buka demo ini di Chrome atau Safari untuk mencobanya.</p>,
+          isi: <p>Browser ini belum mendukung suara. Coba di Chrome atau Safari.</p>,
         },
     {
       target: "#catat",
       judul: "Catat dengan mengetik",
       isi: (
         <p>
-          Ketik <b>rasela 25000</b> lalu kirim. Pilih kategorinya sekali, berikutnya &quot;rasela&quot; langsung dikenali.
+          Ketik <b>rasela 25000</b>, lalu kirim.
         </p>
       ),
     },
     {
       target: ".input-menu",
-      judul: "Catat dari screenshot mutasi",
+      judul: "Catat dari screenshot",
       isi: (
         <>
-          <p>
-            Di akun pribadi, tombol ini juga bisa <b>upload screenshot mutasi</b> BCA, blu, GoPay, Grab, atau ShopeePay. Semua
-            transaksinya terbaca sekaligus.
-          </p>
+          <p>Upload screenshot mutasi bank atau e-wallet di sini. Perlu login Google.</p>
           <p className="tur-kecil">
-            Butuh login Google (hanya nama dan email, tanpa akses Gmail atau Drive). Data tiap akun terpisah, koneksi
-            terenkripsi, dan gambar tidak disimpan. Screenshot dibaca oleh Google Gemini, lihat{" "}
-            <Link href="/privasi">kebijakan privasi</Link>.
+            Gambar tidak disimpan. <Link href="/privasi">Privasi</Link>
           </p>
           <Link href="/masuk" className="tur-google">
             Masuk dengan Google
@@ -181,7 +170,7 @@ export function PanduanDemo({ terakhir }: Props) {
   const tinggiLayar = window.innerHeight;
   const lebar = Math.min(LEBAR_BALON, lebarLayar - 24);
   const kiri = Math.min(Math.max(kotak.left + kotak.width / 2 - lebar / 2, 12), lebarLayar - lebar - 12);
-  const diBawah = kotak.bottom + JARAK + 260 < tinggiLayar;
+  const diBawah = kotak.bottom + JARAK + 200 < tinggiLayar;
   const panah = Math.min(Math.max(kotak.left + kotak.width / 2 - kiri, 20), lebar - 20);
   const sudah = berhasil.has(langkah);
   const terakhirKah = langkah === 2;
