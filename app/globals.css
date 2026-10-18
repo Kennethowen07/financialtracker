@@ -1947,6 +1947,33 @@ code {
   flex-shrink: 0;
 }
 
+.menu-pilihan.nonaktif {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menu-pilihan > span {
+  flex: 1;
+}
+
+.menu-ajak-login {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(224, 163, 58, 0.4);
+  background: rgba(224, 163, 58, 0.08);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+.menu-ajak-login .tombol-utama {
+  align-self: flex-start;
+  text-decoration: none;
+}
+
 .menu-pilihan small {
   display: block;
   margin-top: 2px;

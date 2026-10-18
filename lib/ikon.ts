@@ -33,6 +33,7 @@ export const IKON: Record<string, string[]> = {
   dasbor: ["M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z"],
   menu: ["M4 6h16M4 12h16M4 18h10"],
   kirim: ["M5 12h14M13 6l6 6-6 6"],
+  kunci: ["M6 11h12v9H6z", "M8.5 11V8a3.5 3.5 0 0 1 7 0v3"],
   gambar: ["M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z", "M9 9.5h.01", "M20 15l-4.5-4.5L6 20"],
   mikrofon: ["M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z", "M5 11a7 7 0 0 0 14 0", "M12 18v3"],
   tutup: ["M6 6l12 12M18 6L6 18"],

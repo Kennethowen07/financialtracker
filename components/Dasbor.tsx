@@ -323,8 +323,8 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
           <button
             type="button"
             className="tombol-bulat input-menu"
-            aria-label={bisaMutasi ? "Tambah transaksi: upload mutasi atau form manual" : "Buka form manual"}
-            onClick={() => (bisaMutasi ? setMenu(true) : setEdit("baru"))}
+            aria-label="Tambah transaksi: upload mutasi atau form manual"
+            onClick={() => setMenu(true)}
           >
             <Ikon nama="menu" ukuran={20} />
           </button>
@@ -425,6 +425,7 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
       )}
       {!tanyaSekarang && !edit && menu && (
         <MenuInput
+          perluLogin={!bisaMutasi}
           onMutasi={(berkas) => {
             setMenu(false);
             setBerkasMutasi(berkas);

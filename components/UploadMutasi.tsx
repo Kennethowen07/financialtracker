@@ -2,6 +2,7 @@
 // Upload screenshot mutasi (docs/KEPUTUSAN.md 42+): menu tombol garis tiga, baca tiap screenshot
 // lewat Gemini, lalu layar periksa. Top up, yang sudah tercatat, dan yang dobel antar screenshot
 // awalnya tidak dicentang. Kategori dari memori; yang belum dikenal ditanyakan setelah disimpan.
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { rupiah, tanggalPendek } from "@/lib/format";
 import { kecilkanGambar } from "@/lib/gambar";
@@ -12,19 +13,42 @@ import type { HasilItem } from "@/lib/transaksi";
 import { Ikon } from "./Ikon";
 import { GridKategori, LembarBawah } from "./Lembar";
 
+interface PropsMenu {
+  onMutasi: (berkas: File[]) => void;
+  onManual: () => void;
+  onTutup: () => void;
+  /** Mode demo: upload mutasi tampil tapi nonaktif, dan menekannya memunculkan ajakan login. */
+  perluLogin?: boolean;
+}
+
 /** Menu dari tombol garis tiga: upload mutasi atau form manual. */
-export function MenuInput({ onMutasi, onManual, onTutup }: { onMutasi: (berkas: File[]) => void; onManual: () => void; onTutup: () => void }) {
+export function MenuInput({ onMutasi, onManual, onTutup, perluLogin = false }: PropsMenu) {
   const pilih = useRef<HTMLInputElement>(null);
+  const [ajakLogin, setAjakLogin] = useState(false);
   return (
     <LembarBawah judul="Tambah transaksi" onTutup={onTutup}>
       <div className="menu-input">
-        <button type="button" className="menu-pilihan" onClick={() => pilih.current?.click()}>
+        <button
+          type="button"
+          className={perluLogin ? "menu-pilihan nonaktif" : "menu-pilihan"}
+          aria-disabled={perluLogin}
+          onClick={() => (perluLogin ? setAjakLogin(true) : pilih.current?.click())}
+        >
           <Ikon nama="gambar" ukuran={20} />
           <span>
             Upload screenshot mutasi
-            <small>BCA, blu, GoPay, Grab, ShopeePay, dan lainnya</small>
+            <small>{perluLogin ? "Memerlukan login dengan akun Google" : "BCA, blu, GoPay, Grab, ShopeePay, dan lainnya"}</small>
           </span>
+          {perluLogin && <Ikon nama="kunci" ukuran={16} />}
         </button>
+        {ajakLogin && (
+          <div className="menu-ajak-login" role="alert">
+            <p>Silakan masuk dengan akun Google terlebih dahulu untuk menggunakan fitur ini.</p>
+            <Link href="/masuk" className="tombol-utama">
+              Masuk dengan Google
+            </Link>
+          </div>
+        )}
         <button type="button" className="menu-pilihan" onClick={onManual}>
           <Ikon nama="pensil" ukuran={20} />
           <span>Isi form manual</span>
