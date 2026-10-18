@@ -2078,91 +2078,158 @@ code {
   padding: 4px 0 12px 32px;
 }
 
-/* ================= panduan demo ================= */
+/* ================= panduan demo (tur coach mark) ================= */
 
-.panduan {
+/* Lapisan tur tidak menghalangi klik: tombol yang disorot tetap bisa dicoba. */
+.tur {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+}
+
+/* Bingkai sorotan; bayangan raksasa menggelapkan sisa layar. */
+.tur-sorot {
+  position: fixed;
+  border: 2px dashed #fff;
+  border-radius: var(--pill);
+  box-shadow: 0 0 0 200vmax rgba(0, 0, 0, 0.62);
+  transition: left 0.25s ease, top 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+
+.tur-balon {
+  position: fixed;
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  border: 1px solid rgba(79, 201, 168, 0.35);
+  align-items: stretch;
+  gap: 8px;
+  padding: 14px 16px 12px;
+  border-radius: 16px;
+  background: #f4f6f5;
+  color: #17201d;
+  font-size: 13.5px;
+  line-height: 1.45;
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.6);
+  animation: muncul-tur 0.18s ease-out;
 }
 
-.panduan-kepala {
+@keyframes muncul-tur {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.tur-panah {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  background: #f4f6f5;
+  transform: rotate(45deg);
+}
+
+.tur-balon.bawah .tur-panah {
+  top: -6px;
+}
+
+.tur-balon.atas .tur-panah {
+  bottom: -6px;
+}
+
+.tur-tutup {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-}
-
-.panduan-langkah {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--accent-light);
-}
-
-.panduan-lewati {
+  justify-content: center;
   border: 0;
-  background: none;
-  color: var(--text-2);
-  font-size: 13px;
-  min-height: 32px;
+  border-radius: var(--pill);
+  background: rgba(23, 32, 29, 0.08);
+  color: #17201d;
 }
 
-.panduan-judul {
-  font-size: 17px;
+.tur-judul {
+  padding-right: 30px;
+  font-size: 15px;
 }
 
-.panduan-daftar,
-.panduan-catatan {
+.tur-isi {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-left: 20px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--text-3);
 }
 
-.panduan-daftar svg {
-  vertical-align: -2px;
+.tur-kecil {
+  font-size: 12px;
+  color: #56625e;
 }
 
-.panduan-teks {
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--text-3);
-}
-
-.panduan-tips {
-  font-size: 12.5px;
-  color: var(--text-2);
-}
-
-.panduan-tips svg {
-  vertical-align: -2px;
-}
-
-.panduan-catatan a {
-  color: var(--accent-light);
-}
-
-.panduan-google {
-  align-self: flex-start;
-}
-
-.panduan-berhasil {
-  font-size: 13px;
+.tur-isi a {
+  color: #0f6e56;
   font-weight: 600;
-  color: var(--accent-light);
 }
 
-.panduan-tombol {
+.tur-google {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 8px 14px;
+  border-radius: var(--pill);
+  background: #17201d;
+  color: #fff !important;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.tur-berhasil {
+  font-weight: 700;
+  color: #0f6e56;
+}
+
+.tur-kaki {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
 }
 
-.panduan-tombol > button {
-  flex: 1;
-  min-height: 44px;
+.tur-nomor {
+  font-size: 13px;
+  color: #56625e;
+}
+
+.tur-nomor b {
+  color: #17201d;
+}
+
+.tur-tombol {
+  display: flex;
+  gap: 6px;
+}
+
+.tur-kembali,
+.tur-lanjut {
+  min-height: 36px;
+  padding: 6px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tur-kembali {
+  border: 1px solid rgba(23, 32, 29, 0.2);
+  background: none;
+  color: #17201d;
+}
+
+.tur-lanjut {
+  border: 0;
+  background: #17201d;
+  color: #fff;
 }
 
 .panduan-buka {
@@ -2178,16 +2245,4 @@ code {
   color: var(--text-2);
   font-size: 12.5px;
   font-weight: 600;
-}
-
-/* Tombol yang sedang dibahas panduan berdenyut. */
-body[data-panduan="mik"] .tombol-mik:not(.merekam),
-body[data-panduan="input"] .input-catat {
-  animation: sorot-panduan 1.6s ease-in-out infinite;
-}
-
-@keyframes sorot-panduan {
-  50% {
-    box-shadow: 0 0 0 7px rgba(79, 201, 168, 0.3);
-  }
 }

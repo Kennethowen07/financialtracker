@@ -1,16 +1,18 @@
 "use client";
-// Panduan langkah demi langkah di /demo: (1) coba input suara, (2) coba input ketik, (3) upload
-// screenshot mutasi (butuh akun Google). Muncul otomatis sampai selesai/dilewati di browser itu,
-// dan bisa dibuka lagi lewat tombol "Panduan". Langkah 1 dan 2 ditandai berhasil otomatis.
+// Tur panduan di /demo (gaya coach mark): layar digelapkan, tombol yang dibahas disorot dengan
+// bingkai putus-putus, dan balon keterangan menunjuk ke tombol itu ("1/3", Lanjut, tutup).
+// Langkah: (1) tombol mikrofon, (2) kotak input, (3) tombol garis tiga (upload mutasi, butuh login).
+// Tombol yang disorot tetap bisa dipakai, jadi pengunjung bisa langsung mencoba; percobaan yang
+// berhasil ditandai otomatis. Muncul sampai selesai/ditutup di browser itu, bisa dibuka lagi.
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Ikon } from "./Ikon";
 
 const KUNCI = "panduan-demo-v1";
-type Simpanan = "selesai" | null;
 
-// localStorage dibaca lewat useSyncExternalStore supaya render server (panduan tersembunyi)
-// dan browser tidak bentrok saat hidrasi.
+// localStorage dibaca lewat useSyncExternalStore supaya render server (tur tersembunyi) dan
+// browser tidak bentrok saat hidrasi.
 const pendengar = new Set<() => void>();
 const toko = {
   langganan(f: () => void) {
@@ -19,19 +21,18 @@ const toko = {
       pendengar.delete(f);
     };
   },
-  ambil(): Simpanan {
+  selesai(): boolean {
     try {
-      return localStorage.getItem(KUNCI) === "selesai" ? "selesai" : null;
+      return localStorage.getItem(KUNCI) === "selesai";
     } catch {
-      return null;
+      return false;
     }
   },
-  ganti(nilai: Simpanan) {
+  tandaiSelesai() {
     try {
-      if (nilai) localStorage.setItem(KUNCI, nilai);
-      else localStorage.removeItem(KUNCI);
+      localStorage.setItem(KUNCI, "selesai");
     } catch {
-      // mode privat: panduan tetap jalan selama halaman terbuka
+      // mode privat: tur tetap bisa ditutup selama halaman terbuka
     }
     pendengar.forEach((f) => f());
   },
@@ -39,25 +40,109 @@ const toko = {
 const tanpaLangganan = () => () => {};
 const adaPengenalSuara = () => "SpeechRecognition" in window || "webkitSpeechRecognition" in window;
 
-/** Tombol yang sedang dibahas diberi cahaya berdenyut (lihat CSS [data-panduan]). */
-export type SorotPanduan = "mik" | "input" | null;
+interface Langkah {
+  /** Elemen yang disorot. */
+  target: string;
+  judul: string;
+  isi: ReactNode;
+}
+
+function daftarLangkah(suara: boolean): Langkah[] {
+  return [
+    suara
+      ? {
+          target: ".tombol-mik",
+          judul: "Catat pakai suara",
+          isi: (
+            <>
+              <p>
+                <b>Tahan</b> tombol ini, ucapkan <b>&quot;kopi lima belas ribu&quot;</b>, lalu <b>lepas</b>. Transaksi
+                tersimpan setelah hitung mundur 3 detik.
+              </p>
+              <p className="tur-kecil">
+                iPhone: kalau muncul pesan izin, buka Settings → Privacy &amp; Security → Speech Recognition, nyalakan Safari.
+              </p>
+            </>
+          ),
+        }
+      : {
+          target: ".tombol-kirim",
+          judul: "Catat pakai suara",
+          isi: <p>Browser ini belum mendukung pengenal suara. Coba buka demo ini di Chrome atau Safari untuk mencobanya.</p>,
+        },
+    {
+      target: "#catat",
+      judul: "Catat dengan mengetik",
+      isi: (
+        <p>
+          Ketik <b>rasela 25000</b> lalu kirim. Pilih kategorinya sekali, berikutnya &quot;rasela&quot; langsung dikenali.
+        </p>
+      ),
+    },
+    {
+      target: ".input-menu",
+      judul: "Catat dari screenshot mutasi",
+      isi: (
+        <>
+          <p>
+            Di akun pribadi, tombol ini juga bisa <b>upload screenshot mutasi</b> BCA, blu, GoPay, Grab, atau ShopeePay. Semua
+            transaksinya terbaca sekaligus.
+          </p>
+          <p className="tur-kecil">
+            Butuh login Google (hanya nama dan email, tanpa akses Gmail atau Drive). Data tiap akun terpisah, koneksi
+            terenkripsi, dan gambar tidak disimpan. Screenshot dibaca oleh Google Gemini, lihat{" "}
+            <Link href="/privasi">kebijakan privasi</Link>.
+          </p>
+          <Link href="/masuk" className="tur-google">
+            Masuk dengan Google
+          </Link>
+        </>
+      ),
+    },
+  ];
+}
+
+/** Posisi elemen target, diukur ulang saat layar diubah/digulir. */
+function useKotak(selector: string | null): DOMRect | null {
+  const [kotak, setKotak] = useState<DOMRect | null>(null);
+  useEffect(() => {
+    if (!selector) return;
+    let bingkai = 0;
+    const ukur = () => {
+      cancelAnimationFrame(bingkai);
+      bingkai = requestAnimationFrame(() => setKotak(document.querySelector(selector)?.getBoundingClientRect() ?? null));
+    };
+    ukur();
+    // Tombol mikrofon baru muncul setelah browser dicek, jadi ukur ulang sebentar-sebentar.
+    const jaga = setInterval(ukur, 500);
+    window.addEventListener("resize", ukur);
+    window.addEventListener("scroll", ukur, true);
+    return () => {
+      cancelAnimationFrame(bingkai);
+      clearInterval(jaga);
+      window.removeEventListener("resize", ukur);
+      window.removeEventListener("scroll", ukur, true);
+    };
+  }, [selector]);
+  return kotak;
+}
 
 interface Props {
   /** Cara input terakhir yang berhasil dicatat (dari Dasbor), untuk menandai langkah berhasil. */
   terakhir: { cara: "ketik" | "suara"; ke: number } | null;
 }
 
+const LEBAR_BALON = 300;
+const JARAK = 14;
+
 export function PanduanDemo({ terakhir }: Props) {
-  const simpanan = useSyncExternalStore(toko.langganan, toko.ambil, () => "selesai" as Simpanan);
+  const selesai = useSyncExternalStore(toko.langganan, toko.selesai, () => true);
   const suara = useSyncExternalStore(tanpaLangganan, adaPengenalSuara, () => true);
   const [langkah, setLangkah] = useState(0);
   const [dibuka, setDibuka] = useState(false);
-  // Langkah yang sudah berhasil dicoba (dihitung dari input yang tercatat).
   const [berhasil, setBerhasil] = useState<Set<number>>(() => new Set());
 
-  const tampil = dibuka || simpanan !== "selesai";
-
-  // Input yang berhasil dicatat → tandai langkahnya berhasil.
+  // Input yang berhasil dicatat → tandai langkahnya berhasil (suara = langkah 1, ketik = langkah 2).
   const [diproses, setDiproses] = useState(0);
   if (terakhir && terakhir.ke !== diproses) {
     setDiproses(terakhir.ke);
@@ -65,18 +150,12 @@ export function PanduanDemo({ terakhir }: Props) {
     if (!berhasil.has(lk)) setBerhasil(new Set(berhasil).add(lk));
   }
 
-  // Sorot tombol yang sedang dibahas.
-  const sorot: SorotPanduan = !tampil ? null : langkah === 0 && suara ? "mik" : langkah === 1 ? "input" : null;
-  useEffect(() => {
-    if (sorot) document.body.dataset.panduan = sorot;
-    else delete document.body.dataset.panduan;
-    return () => {
-      delete document.body.dataset.panduan;
-    };
-  }, [sorot]);
+  const tampil = dibuka || !selesai;
+  const langkahIni = daftarLangkah(suara)[langkah];
+  const kotak = useKotak(tampil ? langkahIni.target : null);
 
   function tutup() {
-    toko.ganti("selesai");
+    toko.tandaiSelesai();
     setDibuka(false);
   }
 
@@ -95,106 +174,57 @@ export function PanduanDemo({ terakhir }: Props) {
       </button>
     );
   }
+  if (!kotak) return null;
 
+  // Balon di bawah target kalau muat, kalau tidak di atasnya (di HP kotak input ada di bawah layar).
+  const lebarLayar = window.innerWidth;
+  const tinggiLayar = window.innerHeight;
+  const lebar = Math.min(LEBAR_BALON, lebarLayar - 24);
+  const kiri = Math.min(Math.max(kotak.left + kotak.width / 2 - lebar / 2, 12), lebarLayar - lebar - 12);
+  const diBawah = kotak.bottom + JARAK + 260 < tinggiLayar;
+  const panah = Math.min(Math.max(kotak.left + kotak.width / 2 - kiri, 20), lebar - 20);
   const sudah = berhasil.has(langkah);
+  const terakhirKah = langkah === 2;
 
-  return (
-    <section className="kartu panduan" aria-label="Panduan mencoba demo">
-      <div className="panduan-kepala">
-        <span className="panduan-langkah">Panduan · {langkah + 1}/3</span>
-        <button type="button" className="panduan-lewati" onClick={tutup}>
-          Lewati
+  return createPortal(
+    <div className="tur" role="dialog" aria-label={`Panduan ${langkah + 1} dari 3: ${langkahIni.judul}`}>
+      <div
+        className="tur-sorot"
+        style={{ left: kotak.left - 6, top: kotak.top - 6, width: kotak.width + 12, height: kotak.height + 12 }}
+        aria-hidden="true"
+      />
+      <div
+        className={diBawah ? "tur-balon bawah" : "tur-balon atas"}
+        style={{
+          left: kiri,
+          width: lebar,
+          ...(diBawah ? { top: kotak.bottom + JARAK } : { bottom: tinggiLayar - kotak.top + JARAK }),
+        }}
+      >
+        <span className="tur-panah" style={{ left: panah }} aria-hidden="true" />
+        <button type="button" className="tur-tutup" aria-label="Tutup panduan" onClick={tutup}>
+          <Ikon nama="tutup" ukuran={14} tebal={2.4} />
         </button>
+        <strong className="tur-judul">{langkahIni.judul}</strong>
+        <div className="tur-isi">{langkahIni.isi}</div>
+        {sudah && <p className="tur-berhasil" role="status">Berhasil!</p>}
+        <div className="tur-kaki">
+          <span className="tur-nomor">
+            <b>{langkah + 1}</b>/3
+          </span>
+          <span className="tur-tombol">
+            {langkah > 0 && (
+              <button type="button" className="tur-kembali" onClick={() => setLangkah(langkah - 1)}>
+                Kembali
+              </button>
+            )}
+            <button type="button" className="tur-lanjut" onClick={() => (terakhirKah ? tutup() : setLangkah(langkah + 1))}>
+              {terakhirKah ? "OK" : "Lanjut"}
+            </button>
+          </span>
+        </div>
       </div>
-
-      {langkah === 0 && (
-        <>
-          <h2 className="panduan-judul">Catat pakai suara</h2>
-          {suara ? (
-            <ol className="panduan-daftar">
-              <li>
-                <b>Tahan</b> tombol mikrofon <Ikon nama="mikrofon" ukuran={14} /> di kanan kotak input (yang berdenyut).
-              </li>
-              <li>
-                Sambil menahan, ucapkan: <b>&quot;kopi lima belas ribu&quot;</b>.
-              </li>
-              <li>
-                <b>Lepas</b> tombolnya. Muncul kartu hasil dengan hitung mundur 3 detik, lalu transaksinya tersimpan.
-              </li>
-            </ol>
-          ) : (
-            <p className="panduan-teks">
-              Browser ini belum mendukung pengenal suara. Coba buka demo ini di Chrome atau Safari, atau lanjut ke langkah
-              berikutnya.
-            </p>
-          )}
-          {suara && (
-            <p className="panduan-tips">
-              iPhone: kalau muncul pesan izin, buka Settings → Privacy &amp; Security → Speech Recognition, lalu nyalakan
-              Safari.
-            </p>
-          )}
-        </>
-      )}
-
-      {langkah === 1 && (
-        <>
-          <h2 className="panduan-judul">Catat dengan mengetik</h2>
-          <ol className="panduan-daftar">
-            <li>
-              Ketik <b>rasela 25000</b> di kotak input, lalu kirim.
-            </li>
-            <li>&quot;rasela&quot; belum dikenal, jadi kamu ditanya kategorinya sekali. Pilih satu.</li>
-            <li>
-              Ketik <b>rasela 30000</b>. Sekarang langsung dikenali tanpa ditanya.
-            </li>
-          </ol>
-          <p className="panduan-tips">
-            Mau isi lengkap (tanggal, jenis, kategori)? Tekan tombol garis tiga <Ikon nama="menu" ukuran={14} /> di kiri
-            kotak input.
-          </p>
-        </>
-      )}
-
-      {langkah === 2 && (
-        <>
-          <h2 className="panduan-judul">Catat dari screenshot mutasi</h2>
-          <p className="panduan-teks">
-            Upload screenshot riwayat transaksi BCA, blu, GoPay, Grab, atau ShopeePay, lalu semua transaksinya terbaca
-            sekaligus. Fitur ini butuh akun, karena hasilnya disimpan sebagai catatan pribadimu.
-          </p>
-          <ul className="panduan-catatan">
-            <li>Login Google hanya mengambil nama dan email. Aplikasi tidak bisa membuka Gmail, Drive, atau kontakmu.</li>
-            <li>Data tiap akun terpisah dan tidak terlihat oleh akun lain.</li>
-            <li>Koneksi terenkripsi (HTTPS). Gambar screenshot tidak disimpan di server.</li>
-            <li>
-              Screenshot dibaca oleh Google Gemini. Selengkapnya di <Link href="/privasi">kebijakan privasi</Link>.
-            </li>
-          </ul>
-          <Link href="/masuk" className="tombol-google panduan-google">
-            Masuk dengan Google
-          </Link>
-        </>
-      )}
-
-      {sudah && <p className="panduan-berhasil" role="status">Berhasil! Lanjut ke langkah berikutnya.</p>}
-
-      <div className="panduan-tombol">
-        {langkah > 0 && (
-          <button type="button" className="tombol-kedua" onClick={() => setLangkah(langkah - 1)}>
-            Kembali
-          </button>
-        )}
-        {langkah < 2 ? (
-          <button type="button" className={sudah ? "tombol-utama" : "tombol-kedua"} onClick={() => setLangkah(langkah + 1)}>
-            {sudah ? "Lanjut" : "Lewati langkah ini"}
-          </button>
-        ) : (
-          <button type="button" className="tombol-kedua" onClick={tutup}>
-            Selesai
-          </button>
-        )}
-      </div>
-    </section>
+    </div>,
+    document.body,
   );
 }
