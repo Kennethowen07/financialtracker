@@ -1,6 +1,5 @@
 // Memori = deskripsi yang pernah diajarkan beserta jenis & kategorinya.
 // Dicek sebelum AI, jadi input yang sudah dikenal tidak memanggil AI sama sekali.
-// Aturan pencocokan: docs/KEPUTUSAN.md no. 3.
 import type { Client } from "@libsql/client";
 import type { Jenis } from "./parser";
 

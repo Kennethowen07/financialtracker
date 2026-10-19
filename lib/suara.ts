@@ -1,6 +1,6 @@
 "use client";
-// Pengenal suara bawaan browser (Web Speech API, docs/PRD.md "Input suara").
-// Pola yang sudah dites di iPhone (halaman tes sementara, docs/PROGRESSAI.md): objek pengenal baru setiap rekaman,
+// Pengenal suara bawaan browser (Web Speech API).
+// Pola yang sudah dites di iPhone (halaman tes sementara): objek pengenal baru setiap rekaman,
 // continuous mati, bahasa id-ID, dan dianggap macet kalau 4 detik setelah tombol dilepas
 // belum ada hasil (Safari iPhone kadang terlihat mendengarkan padahal tidak mengembalikan apa-apa).
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";

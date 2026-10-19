@@ -1,5 +1,4 @@
 // Membaca teks bebas tanpa AI: tanggal, nominal, dan pemecahan per nominal.
-// Aturan: docs/PRD.md bagian "Aturan membaca input" + docs/KEPUTUSAN.md no. 1–2.
 // Diturunkan dari legacy/src/parser.js (toAmount).
 import { ubahAngkaKata } from "./angka-kata";
 import { bacaTanggal } from "./tanggal";

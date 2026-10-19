@@ -58,3 +58,6 @@ next-env.d.ts
 
 # backup database (berisi data keuangan pribadi)
 /backup/
+
+# konfigurasi lokal Claude Code
+/.claude/

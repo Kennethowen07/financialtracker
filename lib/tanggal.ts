@@ -43,9 +43,9 @@ export type HasilTanggal =
   | { ok: false; alasan: "tanggal_masa_depan" | "tanggal_tidak_valid"; sisa: string };
 
 interface OpsiMundur {
-  /** "tanggal 20" saat hari ini tgl 15 → tanggal 20 bulan lalu (docs/KEPUTUSAN.md no. 2) */
+  /** "tanggal 20" saat hari ini tgl 15 → tanggal 20 bulan lalu */
   bolehMundurBulan?: boolean;
-  /** "3 des" saat bulan Oktober → Desember tahun lalu (docs/KEPUTUSAN.md no. 7) */
+  /** "3 des" saat bulan Oktober → Desember tahun lalu */
   bolehMundurTahun?: boolean;
 }
 

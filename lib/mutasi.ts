@@ -1,5 +1,5 @@
 // Screenshot mutasi / riwayat transaksi (BCA, blu, GoPay, Grab, ShopeePay, ...) → daftar transaksi
-// untuk diperiksa pengguna sebelum disimpan (docs/PRD.md "Pertanyaan terbuka" no. 1).
+// untuk diperiksa pengguna sebelum disimpan.
 // Gambar dibaca Gemini; di sini hasilnya divalidasi supaya data yang tidak masuk akal tidak lolos.
 
 /**
@@ -138,7 +138,7 @@ export interface BarisPeriksa extends ItemPeriksa {
 const kunciDobel = (b: { tanggal: string; nominal: number; arah: string }) => `${b.tanggal}|${b.nominal}|${b.arah}`;
 
 /**
- * Tentukan centang awal semua baris dari satu atau beberapa screenshot (docs/KEPUTUSAN.md 42+):
+ * Tentukan centang awal semua baris dari satu atau beberapa screenshot:
  * - top up / isi saldo / pindah ke rekening sendiri → tidak dicentang (supaya tidak dihitung dua kali)
  * - sudah tercatat (tanggal + nominal + arah sama) → tidak dicentang
  * - sama dengan baris dari screenshot LAIN (mis. blu "Grab" dan Grab "GrabFood", atau dua screenshot

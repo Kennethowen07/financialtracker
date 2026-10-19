@@ -11,7 +11,7 @@ function items(teks: string) {
   return hasil.items.map((i) => [i.deskripsi, i.nominal]);
 }
 
-describe("tabel nominal di PRD (kata & bahasa gaul)", () => {
+describe("tabel nominal (kata & bahasa gaul)", () => {
   test.each([
     ["dua puluh lima ribu", 25_000],
     ["dua lima ribu", 25_000],
@@ -32,7 +32,7 @@ describe("tabel nominal di PRD (kata & bahasa gaul)", () => {
 });
 
 describe("kalimat dari tes suara di iPhone", () => {
-  test("lima kalimat PRD", () => {
+  test("lima kalimat contoh", () => {
     expect(items("rasela dua puluh lima ribu")).toEqual([["rasela", 25_000]]);
     expect(items("Parkir goceng")).toEqual([["Parkir", 5_000]]);
     expect(items("kopi lima belas ribu roti dua puluh ribu")).toEqual([["kopi", 15_000], ["roti", 20_000]]);

@@ -13,7 +13,7 @@ const KUNCI = "financial-detector-demo-v1";
 const KATEGORI_DEMO: Kategori[] = KATEGORI_BAWAAN.map((k, i) => ({ id: i + 1, ...k, buatanPengguna: false }));
 const idDari = (nama: string) => KATEGORI_DEMO.find((k) => k.nama === nama)!.id;
 
-/** Memori umum bawaan (docs/KEPUTUSAN.md no. 4). "rasela" sengaja tidak ada. */
+/** Memori umum bawaan. "rasela" sengaja tidak ada. */
 const MEMORI_BAWAAN: [string, Jenis, string | null][] = [
   ["warteg", "pengeluaran", "Makanan & Minuman"], ["makan", "pengeluaran", "Makanan & Minuman"],
   ["nasgor", "pengeluaran", "Makanan & Minuman"], ["kopi", "pengeluaran", "Makanan & Minuman"],

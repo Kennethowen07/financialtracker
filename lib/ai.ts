@@ -1,4 +1,4 @@
-// Semua pemanggilan AI lewat sini (docs/PRD.md "Peran AI"): Gemini API mode gratis.
+// Semua pemanggilan AI lewat sini: Gemini API mode gratis.
 // Kode lain hanya mengenal interface LayananAI, jadi di test Gemini bisa diganti tiruan.
 import { ApiError, GoogleGenAI, type ContentListUnion } from "@google/genai";
 import { konteksMutasi, SISTEM_MUTASI, SKEMA_MUTASI } from "./mutasi";
@@ -12,7 +12,7 @@ export interface LayananAI {
   /**
    * Cadangan input suara: teks yang nominalnya tidak terbaca parser ditulis ulang menjadi
    * "deskripsi angka" (mis. "rasela 25000"). Hasilnya tetap dibaca parser. Kategori TIDAK
-   * ditentukan AI (docs/PRD.md versi 3). String kosong = AI juga tidak menemukan nominal.
+   * ditentukan AI. String kosong = AI juga tidak menemukan nominal.
    */
   rapikanSuara(teks: string): Promise<HasilAI<string>>;
   buatAnalisis(ringkasan: unknown): Promise<HasilAI<string>>;
@@ -26,7 +26,7 @@ export interface Gambar {
   mimeType: string;
 }
 
-/** Batas waktu tunggu AI. Lewat dari ini, teks dikembalikan ke kotak input (PRD). */
+/** Batas waktu tunggu AI. Lewat dari ini, teks dikembalikan ke kotak input. */
 export const BATAS_WAKTU_MS = 8_000;
 
 const SISTEM_SUARA = `Kamu menerima hasil pengenal suara (bahasa Indonesia) dari orang yang mencatat pengeluaran, misalnya "rasela dua lima" atau "bensin tiga puluh rebu".

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-// Manifest PWA: supaya aplikasi bisa dipasang di layar utama HP (PRD fitur 10).
+// Manifest PWA: supaya aplikasi bisa dipasang di layar utama HP.
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Financial Detector",

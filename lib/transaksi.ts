@@ -1,4 +1,4 @@
-// Alur mencatat transaksi (docs/PRD.md versi 3 "Alur pengguna"):
+// Alur mencatat transaksi:
 //   teks → parser (nominal dalam angka/kata, tanggal, pecah per nominal)
 //        → memori (persis / tahan typo)  → tersimpan, sumber "memori"
 //        → tidak ketemu                  → tersimpan TANPA kategori, perlu tanya balik
@@ -229,7 +229,7 @@ export async function catatTeks(deps: Deps, teks: string, cara: "ketik" | "suara
 export type HasilRapikan = { ok: true; teks: string } | { ok: false; alasan: "tanpa_nominal" | "tidak_tersedia" | "kuota" };
 
 /**
- * Cadangan input suara (PRD versi 3): teks yang nominalnya tidak terbaca parser dikirim ke
+ * Cadangan input suara: teks yang nominalnya tidak terbaca parser dikirim ke
  * Gemini untuk ditulis ulang. Yang dikirim hanya teks. Hasilnya harus lolos parser, kalau tidak
  * dianggap tetap tanpa nominal.
  */
@@ -282,9 +282,9 @@ export interface SimpanMutasi {
 
 /**
  * Simpan baris mutasi yang dicentang. Semua isian divalidasi ulang di server.
- * cara_input "import" (mutasi = impor dari aplikasi lain, KEPUTUSAN 47); nama aplikasinya di teks_asli.
+ * cara_input "import" (mutasi = impor dari aplikasi lain); nama aplikasinya di teks_asli.
  * Kategori: pilihan pengguna di layar periksa, kalau tidak ada dari memori, kalau tidak ada dibiarkan
- * kosong (penanda "belum dikategorikan"; tidak ditanyakan satu per satu, KEPUTUSAN 51).
+ * kosong (penanda "belum dikategorikan"; tidak ditanyakan satu per satu).
  */
 export async function catatMutasi(deps: Deps, items: SimpanMutasi[]): Promise<HasilItem[]> {
   const sekarang = deps.sekarang?.() ?? new Date();
@@ -364,7 +364,7 @@ export interface UbahTransaksi {
   kategoriBaru?: string | null;
 }
 
-/** Edit transaksi. Kalau jenis/kategori berubah, memori ikut diperbarui (PRD fitur 6). */
+/** Edit transaksi. Kalau jenis/kategori berubah, memori ikut diperbarui. */
 export async function editTransaksi(deps: Deps, id: number, ubah: UbahTransaksi): Promise<Transaksi> {
   const sekarang = deps.sekarang?.() ?? new Date();
   const { db, penggunaId } = deps;
@@ -413,7 +413,7 @@ export interface TransaksiManual extends PilihanKategori {
   arah?: Arah;
 }
 
-/** Form manual (PRD fitur 7): semua isian dari pengguna, ikut diingat di memori. */
+/** Form manual: semua isian dari pengguna, ikut diingat di memori. */
 export async function tambahManual(deps: Deps, data: TransaksiManual): Promise<Transaksi> {
   const sekarang = deps.sekarang?.() ?? new Date();
   const tanggal = cekTanggal(data.tanggal, sekarang);

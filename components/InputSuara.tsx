@@ -1,5 +1,5 @@
 "use client";
-// Input suara (docs/PRD.md "Input suara"): tombol mikrofon yang ditahan, dan kartu hasil
+// Input suara: tombol mikrofon yang ditahan, dan kartu hasil
 // dengan hitung mundur 3 detik sebelum tersimpan (Batalkan / Edit, seperti batal pesanan di Gojek).
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { rupiah } from "@/lib/format";

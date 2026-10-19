@@ -1,6 +1,6 @@
-// Daftar kategori awal sesuai tabel "Jenis | Kategori" di docs/PRD.md.
+// Daftar kategori awal per jenis transaksi.
 // `ikon` adalah kunci yang nanti dicocokkan ke gambar SVG di komponen React.
-// Kunci yang sama dengan desain (docs/design/02-tanya-balik): makan, transport,
+// Kunci yang dipakai desain: makan, transport,
 // belanja, pulsa, tagihan, hiburan, langganan.
 
 export type JenisBerkategori = "pengeluaran" | "pemasukan" | "investasi";

@@ -31,7 +31,7 @@ describe("cocokkan (tanpa database)", () => {
     expect(cocokkan("Kopi Gereja", daftar)).toMatchObject({ id: 2, cara: "persis" });
   });
 
-  test("typo 'bakmi efata' ketemu 'bakmi effata' (PRD)", () => {
+  test("typo 'bakmi efata' ketemu 'bakmi effata'", () => {
     expect(cocokkan("bakmi efata", daftar)).toMatchObject({ id: 1, cara: "mirip" });
   });
 

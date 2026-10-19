@@ -1,4 +1,4 @@
-// Kuota AI mode demo (docs/PRD.md "Mode demo"): 2 panggilan per pengunjung (per IP, per hari)
+// Kuota AI mode demo: 2 panggilan per pengunjung (per IP, per hari)
 // ditambah batas total harian untuk semua pengunjung. Dihitung di server, bukan di browser.
 import type { Client } from "@libsql/client";
 

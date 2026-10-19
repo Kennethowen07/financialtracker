@@ -2,7 +2,7 @@
 //   "dua puluh lima ribu" → "25000", "dua lima ribu" → "25000", "satu setengah juta" → "1500000",
 //   "goceng" → "5000".
 // Kata angka TANPA satuan ribu/juta ("dua lima", "sate lima tusuk") dibiarkan apa adanya,
-// karena terlalu ambigu (docs/PRD.md bagian "Aturan membaca input").
+// karena terlalu ambigu.
 
 const GAUL: Record<string, number> = {
   seceng: 1_000,

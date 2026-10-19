@@ -1,5 +1,5 @@
 "use client";
-// Halaman Analisis AI (docs/design/05b): tombol Perbarui, kartu ringkasan, "Paling sering".
+// Halaman Analisis AI: tombol Perbarui, kartu ringkasan, "Paling sering".
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

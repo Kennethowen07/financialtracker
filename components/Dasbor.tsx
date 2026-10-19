@@ -49,7 +49,7 @@ const PESAN_GAGAL: Record<AlasanGagalBaca, string> = {
   tanggal_tidak_valid: "Tanggalnya tidak valid",
 };
 
-/** Pesan saat input suara gagal. izin_layanan: pelajaran dari tes di iPhone (docs/PROGRESSAI.md). */
+/** Pesan saat input suara gagal. izin_layanan: pelajaran dari tes di iPhone. */
 const PESAN_SUARA: Record<GagalSuara, string> = {
   tidak_terdengar: "Suara nggak tertangkap, coba lagi atau ketik",
   izin_mikrofon: "Izin mikrofon ditolak. Izinkan mikrofon untuk situs ini di pengaturan browser",
@@ -142,13 +142,13 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
   /**
    * Simpan teks (ketikan atau hasil suara). Transaksi langsung tampil dengan status memproses.
    * Yang belum dikenal memori langsung ditanyakan kategorinya, termasuk hasil suara setelah
-   * hitung mundur habis (permintaan pemilik, docs/KEPUTUSAN.md no. 35).
+   * hitung mundur habis (permintaan pemilik).
    */
   async function catat(isi: string, cara: "ketik" | "suara") {
     const baca = bacaInput(isi);
     if (!baca.ok) return;
 
-    // Langsung tampil dengan status memproses (PRD: transaksi tampil begitu dikirim).
+    // Langsung tampil dengan status memproses (transaksi tampil begitu dikirim).
     const kunci = baca.items.map(() => `s${++nomor.current}`);
     if (baca.tanggal.startsWith(bulan)) {
       setSementara((s) => [
@@ -238,7 +238,7 @@ export function Dasbor({ hariIni, awal, gudang: gudangAsli = gudangServer, kepal
   const bisaMutasi = Boolean(gudang.bacaMutasi);
 
   // Kategori sudah bisa dipilih di layar periksa, jadi yang dibiarkan kosong tidak ditanyakan satu per
-  // satu; cukup penanda "belum dikategorikan" (permintaan pemilik, KEPUTUSAN 51).
+  // satu; cukup penanda "belum dikategorikan" (permintaan pemilik).
   function selesaiMutasi(hasil: HasilItem[]) {
     setBerkasMutasi(null);
     for (const h of hasil) terapkan(h.transaksi);

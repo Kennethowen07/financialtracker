@@ -1,8 +1,6 @@
 # Financial Detector
 
 Catat pengeluaran dengan mengetik bebas seperti `makan 25000`, langsung jadi dashboard bulanan.
-Spesifikasi lengkap ada di [docs/PRD.md](docs/PRD.md), desain di [docs/design](docs/design/README.md),
-dan keputusan yang melengkapi PRD di [docs/KEPUTUSAN.md](docs/KEPUTUSAN.md).
 
 ## Cara kerja singkat
 
@@ -25,7 +23,7 @@ npm run dev           # buka http://localhost:3000
 Tanpa file `.env.local`, aplikasi tetap jalan: database memakai `local.db`, AI dianggap mati
 (semua input baru memunculkan tanya balik), dan halaman `/masuk` menyediakan **login developer**
 (ketik email apa saja, tanpa Google; hanya ada di laptop dan hanya saat memakai `local.db`, bukan Turso). Untuk mengaktifkan AI dan login Google,
-salin `.env.example` menjadi `.env.local` lalu isi nilainya (lihat [docs/DEPLOY.md](docs/DEPLOY.md)).
+salin `.env.example` menjadi `.env.local` lalu isi nilainya.
 
 Setiap akun hanya melihat datanya sendiri. Akun dengan email `ADMIN_EMAIL` menjadi admin.
 
@@ -52,18 +50,6 @@ Halaman:
 | `npm run db:setup` | Buat tabel & kategori (aman diulang) |
 | `npm run mutasi:coba` | Uji baca screenshot mutasi di `data/mutasi/` lewat Gemini (tidak menyimpan apa pun) |
 | `npm run db:backup` | Backup database (Turso / local.db) ke `backup/*.sql` |
-| `npm run import:siapkan` | Import langkah 1: spreadsheet lama → `data/import/deskripsi.csv` untuk dicek |
-| `npm run import:jalankan` | Import langkah 2: CSV yang sudah dikoreksi → database |
-
-## Import spreadsheet lama
-
-1. Taruh `Pengeluaran 2026.xlsx` di folder project (file ini tidak ikut git).
-2. `npm run import:siapkan`. Kalau `GEMINI_API_KEY` diisi, kolom kategori langsung berisi tebakan AI.
-3. Buka `data/import/deskripsi.csv`, periksa kolom `jenis` dan `kategori` (nama persis seperti di aplikasi;
-   usaha dibiarkan kosong).
-4. Pastikan `ADMIN_EMAIL` diisi dan akun itu sudah pernah login sekali (data import masuk ke akun admin).
-5. `npm run import:jalankan`. Kalau ada yang salah di CSV, tidak ada yang disimpan dan masalahnya ditampilkan.
-   Untuk mengulang import: `npm run import:jalankan -- --ulang`.
 
 ## Struktur
 
@@ -72,12 +58,15 @@ app/              halaman (page.tsx) dan API (api/**/route.ts)
 components/       komponen React (Dasbor, panel tanya balik, form, analisis, demo)
 lib/              logika: parser, tanggal, memori, ai, transaksi, laporan, kuota, akun, google, sesi
 db/schema.sql     skema database
-scripts/          db-setup dan import spreadsheet
+scripts/          db-setup, backup, dan uji baca screenshot mutasi
 proxy.ts          proteksi login (halaman & API pribadi wajib login)
-docs/             PRD, desain, keputusan, panduan deploy
 legacy/           kode versi lama (Express + bot Telegram), tidak dipakai lagi
 ```
 
 ## Deploy
 
-Lihat [docs/DEPLOY.md](docs/DEPLOY.md).
+1. Buat database di [Turso](https://turso.tech), lalu jalankan `npm run db:setup` dengan
+   `TURSO_DATABASE_URL` dan `TURSO_AUTH_TOKEN` di `.env.local`.
+2. Buat OAuth Client ID (Web application) di Google Cloud Console dengan redirect URI
+   `https://<nama-project>.vercel.app/api/auth/google/callback`.
+3. Import repo ini di Vercel, isi environment variables sesuai `.env.example`, lalu deploy.

@@ -1,5 +1,5 @@
 "use client";
-// Mode demo (docs/design/06): dashboard yang sama, data di browser, label kuota AI.
+// Mode demo: dashboard yang sama, data di browser, label kuota AI.
 import { useEffect, useMemo, useState } from "react";
 import { buatGudangDemo } from "@/lib/demo";
 import { Dasbor } from "./Dasbor";

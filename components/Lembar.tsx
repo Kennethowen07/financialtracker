@@ -1,6 +1,6 @@
 "use client";
 // Panel yang muncul dari bawah (HP) / di tengah (laptop):
-// - PanelTanya: tanya balik kategori & jenis (docs/design/02)
+// - PanelTanya: tanya balik kategori & jenis
 // - FormTransaksi: form manual (03) dan edit transaksi (04)
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import type { Kategori } from "@/lib/kategori";

@@ -1,6 +1,5 @@
 // Path SVG ikon (gaya garis 2px, viewBox 24). Kunci = kolom `ikon` di tabel kategori.
-// Ikon kategori dari docs/design/02-tanya-balik dan 05-dashboard-laptop disalin persis;
-// sisanya dibuat dengan gaya yang sama.
+// Semua ikon memakai gaya garis yang sama.
 
 export const IKON: Record<string, string[]> = {
   // kategori (dari desain)

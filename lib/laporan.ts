@@ -1,6 +1,5 @@
 // Ringkasan bulanan untuk dashboard dan Analisis AI. Fungsi murni (tanpa database),
 // jadi dipakai sama persis di browser (dashboard, mode demo) dan di server (Analisis AI).
-// Aturan: docs/PRD.md fitur 8 dan paragraf "Week dihitung per bulan".
 import { normalisasi } from "./memori";
 import type { Transaksi } from "./transaksi";
 

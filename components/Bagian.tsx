@@ -1,6 +1,6 @@
 "use client";
 // Bagian-bagian dashboard: kartu ringkasan, per minggu, per kategori, daftar transaksi,
-// dan pemilih bulan. Tampilannya mengikuti docs/design/01 (HP) dan 05 (laptop).
+// dan pemilih bulan. Tampilannya untuk HP dan laptop.
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { RingkasanBulan } from "@/lib/laporan";
 import type { Transaksi } from "@/lib/transaksi";

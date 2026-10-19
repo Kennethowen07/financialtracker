@@ -11,7 +11,7 @@ interface Props {
   children: ReactNode;
 }
 
-/** Sidebar di laptop (docs/design/05). Di HP sidebar disembunyikan lewat CSS. */
+/** Sidebar di laptop. Di HP sidebar disembunyikan lewat CSS. */
 export function Kerangka({ aktif, akun, children }: Props) {
   const halaman = (nama: Props["aktif"]) => (aktif === nama ? "page" : undefined);
   return (

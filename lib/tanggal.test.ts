@@ -32,7 +32,7 @@ describe("bacaTanggal", () => {
     expect(tgl(`${teks} makan 25000`)).toMatchObject({ ok: true, tanggal, sisa: "makan 25000" });
   });
 
-  test("tanggal lewat hari ini tanpa bulan → bulan lalu (KEPUTUSAN no. 2)", () => {
+  test("tanggal lewat hari ini tanpa bulan → bulan lalu", () => {
     expect(tgl("tanggal 20 makan 25000")).toMatchObject({ ok: true, tanggal: "2026-09-20" });
   });
 
@@ -40,7 +40,7 @@ describe("bacaTanggal", () => {
     expect(tgl("tanggal 31 makan 25000")).toMatchObject({ ok: false, alasan: "tanggal_tidak_valid" });
   });
 
-  test("tanggal + bulan tanpa tahun yang lewat hari ini → tahun lalu (KEPUTUSAN no. 7)", () => {
+  test("tanggal + bulan tanpa tahun yang lewat hari ini → tahun lalu", () => {
     expect(tgl("3 des kado 100000")).toMatchObject({ ok: true, tanggal: "2025-12-03" });
   });
 

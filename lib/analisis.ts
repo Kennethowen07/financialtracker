@@ -1,4 +1,4 @@
-// Analisis AI bulanan (docs/PRD.md "Peran AI", titik ke-2).
+// Analisis AI bulanan.
 // Hanya dijalankan lewat tombol "Perbarui"; hasilnya disimpan per bulan di tabel analisis.
 // Yang dikirim ke AI hanya ringkasan + 10 deskripsi tersering, bukan daftar transaksi.
 import type { Client } from "@libsql/client";
@@ -22,7 +22,7 @@ export async function ambilAnalisis(db: Client, penggunaId: number, bulan: strin
   return { bulan: String(rows[0].bulan), isi: String(rows[0].isi), dibuatPada: String(rows[0].dibuat_pada) };
 }
 
-/** Data yang dikirim ke AI: ringkasan saja (PRD), tanpa nominal per transaksi. */
+/** Data yang dikirim ke AI: ringkasan saja, tanpa nominal per transaksi. */
 export function dataUntukAI(r: RingkasanBulan) {
   return {
     bulan: r.bulan,

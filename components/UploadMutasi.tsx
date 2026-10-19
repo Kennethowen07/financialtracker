@@ -1,5 +1,5 @@
 "use client";
-// Upload screenshot mutasi (docs/KEPUTUSAN.md 42+): menu tombol garis tiga, baca tiap screenshot
+// Upload screenshot mutasi: menu tombol garis tiga, baca tiap screenshot
 // lewat Gemini, lalu layar periksa. Top up, yang sudah tercatat, dan yang dobel antar screenshot
 // awalnya tidak dicentang. Kategori dari memori; yang belum dikenal ditanyakan setelah disimpan.
 import Link from "next/link";

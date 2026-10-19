@@ -21,7 +21,7 @@ function trx(tanggal: string, nominal: number, jenis: Transaksi["jenis"] = "peng
   };
 }
 
-describe("indeksMinggu (PRD: 1–7, 8–14, 15–21, 22–akhir)", () => {
+describe("indeksMinggu (1–7, 8–14, 15–21, 22–akhir)", () => {
   test.each([
     ["2026-10-01", 0], ["2026-10-07", 0], ["2026-10-08", 1], ["2026-10-14", 1],
     ["2026-10-15", 2], ["2026-10-21", 2], ["2026-10-22", 3], ["2026-10-31", 3],

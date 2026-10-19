@@ -75,8 +75,8 @@ describe("ketemu di memori", () => {
   });
 });
 
-describe("belum dikenal → tanya balik (AI kategorisasi dimatikan, PRD versi 3)", () => {
-  test("alur PRD: rasela 25000 → tanya balik → rasela 30000 dikenali", async () => {
+describe("belum dikenal → tanya balik (AI kategorisasi dimatikan)", () => {
+  test("alur: rasela 25000 → tanya balik → rasela 30000 dikenali", async () => {
     const ai = aiTiruan();
     const deps = await siapkan(ai);
 

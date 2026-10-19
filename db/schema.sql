@@ -1,4 +1,4 @@
--- Skema database Financial Detector (sesuai docs/PRD.md bagian "Teknis dan data").
+-- Skema database Financial Detector.
 -- Aman dijalankan berulang kali: semua perintah memakai IF NOT EXISTS.
 -- Database lama (sebelum ada akun) diubah dulu oleh lib/skema.ts sebelum file ini dijalankan.
 -- Format tanggal: YYYY-MM-DD (zona Asia/Jakarta). Format waktu: ISO-8601 UTC.
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS transaksi (
   teks_asli   TEXT    NOT NULL,
   -- Dari mana kategorinya berasal.
   sumber      TEXT    NOT NULL CHECK (sumber IN ('memori', 'ai', 'tanya_balik', 'manual', 'import')),
-  -- 1 kalau jenis/kategorinya pernah diganti lewat edit (metrik akurasi di PRD).
+  -- 1 kalau jenis/kategorinya pernah diganti lewat edit (metrik akurasi).
   dikoreksi   INTEGER NOT NULL DEFAULT 0 CHECK (dikoreksi IN (0, 1)),
   dibuat_pada TEXT    NOT NULL,
   pengguna_id INTEGER REFERENCES pengguna (id),

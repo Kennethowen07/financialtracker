@@ -36,7 +36,7 @@ describe("format nominal", () => {
   });
 });
 
-describe("pemecahan per nominal (PRD)", () => {
+describe("pemecahan per nominal", () => {
   test("kopi 15000 roti 25000 → dua transaksi", () => {
     expect(items("kopi 15000 roti 25000")).toEqual([
       { deskripsi: "kopi", nominal: 15000, jenisPasti: null },
@@ -57,7 +57,7 @@ describe("pemecahan per nominal (PRD)", () => {
     ]);
   });
 
-  test("angka kecil tanpa akhiran tetap bagian deskripsi (KEPUTUSAN no. 1)", () => {
+  test("angka kecil tanpa akhiran tetap bagian deskripsi", () => {
     expect(items("kopi 2 gelas 30rb")).toEqual([{ deskripsi: "kopi 2 gelas", nominal: 30000, jenisPasti: null }]);
   });
 
@@ -77,7 +77,7 @@ describe("pemecahan per nominal (PRD)", () => {
   });
 });
 
-describe("tabel aturan PRD (bagian parser)", () => {
+describe("tabel aturan parser", () => {
   // Jenis selain "+" ditentukan memori/AI di Tahap 3; parser hanya memastikan
   // nominal & deskripsinya benar dan tidak memaksakan jenis.
   test.each([
