@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import { DasborDemo } from "@/components/DasborDemo";
 import { hariIni } from "@/lib/tanggal";
 
-export const metadata = { title: "Demo · Financial Detector" };
+export const metadata = { title: "Demo · CatetAja" };
 
 async function HalamanDemo() {
   await connection(); // tanggal "hari ini" dihitung saat dibuka, bukan saat build

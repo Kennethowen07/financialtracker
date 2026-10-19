@@ -1,4 +1,4 @@
-# Financial Detector
+# CatetAja
 
 Catat pengeluaran dengan mengetik bebas seperti `makan 25000`, langsung jadi dashboard bulanan.
 

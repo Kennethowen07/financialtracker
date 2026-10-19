@@ -9,7 +9,7 @@ import { daftarPengguna } from "@/lib/akun";
 import { db } from "@/lib/db";
 import { penggunaSaatIni } from "@/lib/server";
 
-export const metadata = { title: "Pengguna · Financial Detector" };
+export const metadata = { title: "Pengguna · CatetAja" };
 
 // Khusus admin (email = ADMIN_EMAIL). Akun lain diarahkan kembali ke dashboard.
 async function HalamanAdmin() {

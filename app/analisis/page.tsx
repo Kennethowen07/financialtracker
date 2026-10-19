@@ -9,7 +9,7 @@ import { penggunaSaatIni } from "@/lib/server";
 import { bulanSebelumnya, hariIni } from "@/lib/tanggal";
 import { daftarTransaksi } from "@/lib/transaksi";
 
-export const metadata = { title: "Analisis AI · Financial Detector" };
+export const metadata = { title: "Analisis AI · CatetAja" };
 
 async function HalamanAnalisis({ searchParams }: PageProps<"/analisis">) {
   await connection();

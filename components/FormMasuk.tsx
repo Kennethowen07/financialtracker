@@ -58,7 +58,7 @@ export function FormMasuk({ google, dev, galat: galatAwal }: Props) {
         <span className="sidebar-logo-ikon besar" aria-hidden="true">
           <Ikon nama="tren" ukuran={22} tebal={2.2} />
         </span>
-        <h1 className="form-judul">Financial Detector</h1>
+        <h1 className="form-judul">CatetAja</h1>
         <p className="masuk-sub">Catat pengeluaran cukup dengan mengetik, misalnya <b>makan 25000</b>.</p>
 
         {google ? (

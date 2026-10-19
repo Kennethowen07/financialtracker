@@ -9,10 +9,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Financial Detector",
+  title: "CatetAja",
   description: "Catat pengeluaran dengan mengetik bebas, langsung jadi dashboard bulanan.",
   // Mode layar penuh saat dipasang di layar utama iPhone.
-  appleWebApp: { capable: true, title: "Keuangan", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "CatetAja", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {

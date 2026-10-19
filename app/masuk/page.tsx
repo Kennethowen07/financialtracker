@@ -5,7 +5,7 @@ import { FormMasuk } from "@/components/FormMasuk";
 import { googleAktif } from "@/lib/google";
 import { loginDevAktif, penggunaSaatIni } from "@/lib/server";
 
-export const metadata = { title: "Masuk · Financial Detector" };
+export const metadata = { title: "Masuk · CatetAja" };
 
 const PESAN_GALAT: Record<string, string> = {
   belum_diatur: "Login Google belum diatur di server.",

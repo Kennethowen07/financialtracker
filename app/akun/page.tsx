@@ -7,7 +7,7 @@ import { Kerangka } from "@/components/Kerangka";
 import { TombolKeluar } from "@/components/TombolKeluar";
 import { penggunaSaatIni } from "@/lib/server";
 
-export const metadata = { title: "Akun · Financial Detector" };
+export const metadata = { title: "Akun · CatetAja" };
 
 // Halaman akun: siapa yang sedang login, tautan admin, dan tombol keluar (penting di HP,
 // karena sidebar hanya tampil di laptop).

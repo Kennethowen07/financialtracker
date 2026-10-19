@@ -21,7 +21,7 @@ export function Kerangka({ aktif, akun, children }: Props) {
           <span className="sidebar-logo-ikon">
             <Ikon nama="tren" ukuran={16} tebal={2.2} />
           </span>
-          Financial Detector
+          CatetAja
         </span>
         <Link href={akun ? "/" : "/demo"} className="sidebar-link" aria-current={halaman("dasbor")}>
           <Ikon nama="dasbor" />

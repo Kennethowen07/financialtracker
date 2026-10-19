@@ -2,7 +2,7 @@
 // Google OAuth bisa di-"Publish" untuk semua orang.
 import Link from "next/link";
 
-export const metadata = { title: "Kebijakan Privasi · Financial Detector" };
+export const metadata = { title: "Kebijakan Privasi · CatetAja" };
 
 export default function Halaman() {
   return (
@@ -11,7 +11,7 @@ export default function Halaman() {
       <p className="halaman-teks-sub">Berlaku sejak 15 Oktober 2026, diperbarui 18 Oktober 2026 (input suara dan screenshot mutasi).</p>
 
       <p>
-        Financial Detector adalah aplikasi pencatat pengeluaran pribadi. Halaman ini menjelaskan data apa yang
+        CatetAja adalah aplikasi pencatat pengeluaran pribadi. Halaman ini menjelaskan data apa yang
         disimpan dan untuk apa.
       </p>
 

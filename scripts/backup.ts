@@ -25,7 +25,7 @@ async function main() {
   );
 
   const baris: string[] = [
-    `-- Backup Financial Detector (${lokasiDatabase}), ${new Date().toISOString()}`,
+    `-- Backup CatetAja (${lokasiDatabase}), ${new Date().toISOString()}`,
     "PRAGMA foreign_keys = OFF;",
     "BEGIN TRANSACTION;",
   ];
